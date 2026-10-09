@@ -10,11 +10,12 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 
-> **Etapa atual:** preparação da base do projeto, com um teste de health check implementado. O workflow está configurado; sua execução no GitHub depende da publicação do repositório. As próximas operações serão automatizadas depois da revisão da base e publicação no GitHub.
+> **Etapa atual:** base publicada no GitHub, com cenários de health check e criação de token implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
 
 ## O que este projeto demonstra
 
 - Validação do status HTTP do endpoint de health check.
+- Validação da criação de token de autenticação e do formato da resposta JSON.
 - Organização de testes e recursos reutilizáveis com Robot Framework.
 - Isolamento de dependências em ambiente virtual e versões fixadas.
 - Configuração de integração contínua com preservação dos relatórios, inclusive em falhas.
@@ -37,7 +38,10 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 
 | Cenário | Endpoint | Verificações |
 | --- | --- | --- |
-| **CT01 API deve estar disponível** | `GET /ping` | HTTP 201 |
+| **CT01 - API deve estar disponível** | `GET /ping` | HTTP 201 |
+| **CT02 - API deve criar um token com credenciais válidas** | `POST /auth` | HTTP 200, conteúdo JSON e campo `token` como string não vazia |
+
+O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
 
 ## Executar no Windows
 
@@ -105,33 +109,34 @@ Projeto_outubro/
 │   ├── extensions.json
 │   └── settings.json
 ├── resources/
+│   ├── auth.resource
 │   ├── common.resource
 │   └── health.resource
 ├── tests/
-│   └── health/
-│       └── health_check.robot
+│   ├── create_token.robot
+│   └── health_check.robot
 ├── results/
 ├── .gitignore
 ├── README.md
 └── requirements.txt
 ```
 
-`common.resource` centraliza a conexão HTTP; `health.resource` reúne as keywords usadas pela suíte `health_check.robot`. A pasta `.venv/` também existe localmente. Ela e `results/` ficam no `.gitignore` e não são versionadas; os resultados são gerados durante a execução.
+`common.resource` centraliza a conexão HTTP, a preparação da resposta e a validação de status. `health.resource` reúne a requisição de health check; `auth.resource` reúne a preparação das credenciais, a requisição de autenticação e a validação do token. A pasta `.venv/` também existe localmente. Ela e `results/` ficam no `.gitignore` e não são versionadas; os resultados são gerados durante a execução.
 
 ## Convenção de nomes das suítes
 
-Os arquivos de teste seguem o nome das operações documentadas na API Docs, convertido para `snake_case`. Os cenários de cada operação ficam na mesma suíte, organizada por funcionalidade.
+Os arquivos de teste seguem o nome das operações documentadas na API Docs, convertido para `snake_case`. Os cenários de cada operação ficam na mesma suíte, diretamente na pasta `tests/`.
 
 | Operação na API Docs | Arquivo de teste | Situação |
 | --- | --- | --- |
-| HealthCheck | `tests/health/health_check.robot` | Implementado |
-| CreateToken | `tests/auth/create_token.robot` | Planejado |
-| GetBookingIds | `tests/booking/get_booking_ids.robot` | Planejado |
-| GetBooking | `tests/booking/get_booking.robot` | Planejado |
-| CreateBooking | `tests/booking/create_booking.robot` | Planejado |
-| UpdateBooking | `tests/booking/update_booking.robot` | Planejado |
-| PartialUpdateBooking | `tests/booking/partial_update_booking.robot` | Planejado |
-| DeleteBooking | `tests/booking/delete_booking.robot` | Planejado |
+| HealthCheck | `tests/health_check.robot` | Implementado |
+| CreateToken | `tests/create_token.robot` | Implementado |
+| GetBookingIds | `tests/get_booking_ids.robot` | Planejado |
+| GetBooking | `tests/get_booking.robot` | Planejado |
+| CreateBooking | `tests/create_booking.robot` | Planejado |
+| UpdateBooking | `tests/update_booking.robot` | Planejado |
+| PartialUpdateBooking | `tests/partial_update_booking.robot` | Planejado |
+| DeleteBooking | `tests/delete_booking.robot` | Planejado |
 
 Os arquivos planejados serão criados quando a automação da operação começar. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`.
 
@@ -140,7 +145,7 @@ Os arquivos planejados serão criados quando a automação da operação começa
 Os casos usam o padrão Given/When/Then em português dentro de arquivos `.robot`. A declaração `Language: pt` habilita os prefixos `Dado`, `Quando`, `Então` e `E` no Robot Framework.
 
 ```robotframework
-CT01 API deve estar disponível
+CT01 - API deve estar disponível
     [Documentation]    Valida a disponibilidade da API Restful Booker.
     [Tags]    smoke    health
 
@@ -153,6 +158,18 @@ Para executar apenas o health check:
 
 ```powershell
 .\.venv\Scripts\python.exe -m robot --include health --outputdir results tests
+```
+
+Para executar apenas os testes com a tag `smoke`:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --include smoke --outputdir results tests
+```
+
+Para executar todos os testes:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests
 ```
 
 ## Decisões de teste

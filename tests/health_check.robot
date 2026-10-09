@@ -2,11 +2,11 @@ Language: pt
 
 *** Settings ***
 Documentation       Verificações iniciais de disponibilidade.
-Resource            ../../resources/health.resource
+Resource            ../resources/health.resource
 Suite Teardown      Delete All Sessions
 
 *** Test Cases ***
-CT01 API deve estar disponível
+CT01 - API deve estar disponível
     [Documentation]    Valida a disponibilidade da API Restful Booker.
     [Tags]    smoke    health
 
