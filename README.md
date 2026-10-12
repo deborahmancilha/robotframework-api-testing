@@ -10,7 +10,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 
-> **Etapa atual:** base publicada no GitHub, com cenários de health check e criação de token implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
+> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token e consulta de IDs de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
 
 ## O que este projeto demonstra
 
@@ -40,8 +40,19 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 | --- | --- | --- |
 | **CT01 - API deve estar disponível** | `GET /ping` | HTTP 201 |
 | **CT02 - API deve criar um token com credenciais válidas** | `POST /auth` | HTTP 200, conteúdo JSON e campo `token` como string não vazia |
+| **CT03 - API deve listar os IDs das reservas** | `GET /booking` | HTTP 200, lista JSON, IDs inteiros e sem duplicatas |
+| **CT04 - API deve filtrar os IDs das reservas pelo primeiro nome** | `GET /booking?firstname=...` | HTTP 200 e somente os dois IDs esperados |
+| **CT05 - API deve filtrar os IDs das reservas pelo sobrenome** | `GET /booking?lastname=...` | HTTP 200 e somente os dois IDs esperados |
+| **CT06 - API deve filtrar os IDs das reservas pelo nome e sobrenome** | `GET /booking?firstname=...&lastname=...` | HTTP 200 e somente o ID que combina ambos os campos |
+| **CT07 - API deve retornar uma lista vazia para um nome sem correspondência** | `GET /booking?firstname=...` | HTTP 200 e lista JSON vazia |
 
 O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
+
+GetBookingIds utiliza o contrato da [API Docs — GetBookingIds](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-GetBookings): status 200 e lista de objetos com IDs únicos. A validação de inteiro segue o formato dos identificadores da API, sendo mais restrita que o tipo `number` documentado. A listagem sem filtros aceita uma lista vazia e não exige quantidade nem ordem fixas.
+
+Os cenários com filtros criam três reservas com nomes únicos gerados por UUID: duas compartilham o primeiro nome e duas compartilham o sobrenome. A combinação de nome e sobrenome identifica somente uma delas, permitindo detectar filtros ignorados. Cada caso mantém seus próprios IDs e token de limpeza; no teardown, exclui apenas suas reservas, tenta limpar as demais mesmo se uma exclusão falhar e encerra as sessões. Falhas na limpeza reprovam o caso. A criação e a exclusão são preparação e limpeza dos testes de consulta, não suítes completas dessas operações.
+
+A API é pública e compartilhada; reinicializações ou alterações por terceiros durante um caso podem causar falhas. Filtros por `checkin` e `checkout`, também documentados, permanecem pendentes. Busca sem correspondência é um cenário válido com resultado vazio; não se presume erro HTTP para esse caso.
 
 ## Executar no Windows
 
@@ -110,10 +121,12 @@ Projeto_outubro/
 │   └── settings.json
 ├── resources/
 │   ├── auth.resource
+│   ├── booking.resource
 │   ├── common.resource
 │   └── health.resource
 ├── tests/
 │   ├── create_token.robot
+│   ├── get_booking_ids.robot
 │   └── health_check.robot
 ├── results/
 ├── .gitignore
@@ -131,7 +144,7 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | --- | --- | --- |
 | HealthCheck | `tests/health_check.robot` | Implementado |
 | CreateToken | `tests/create_token.robot` | Implementado |
-| GetBookingIds | `tests/get_booking_ids.robot` | Planejado |
+| GetBookingIds | `tests/get_booking_ids.robot` | Implementado |
 | GetBooking | `tests/get_booking.robot` | Planejado |
 | CreateBooking | `tests/create_booking.robot` | Planejado |
 | UpdateBooking | `tests/update_booking.robot` | Planejado |
@@ -139,6 +152,14 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | DeleteBooking | `tests/delete_booking.robot` | Planejado |
 
 Os arquivos planejados serão criados quando a automação da operação começar. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`.
+
+A separação segue a ideia de encapsular ações e detalhes técnicos usada no Page Object Model (POM). Para esta API, a camada de recursos representa operações de serviço: `tests/get_booking_ids.robot` descreve os cenários BDD, `booking.resource` implementa requisições, validações e dados de teste, e `common.resource` centraliza conexão e status. Não existem páginas ou seletores de interface nesta automação.
+
+Para executar somente a operação GetBookingIds:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests/get_booking_ids.robot
+```
 
 ## Escrita dos cenários em BDD
 
@@ -177,7 +198,7 @@ Para executar todos os testes:
 - **Sessão reutilizável:** configuração centralizada da URL e do timeout de 30 segundos.
 - **TLS verificado:** as requisições mantêm a validação de certificados habilitada.
 - **Status explícitos:** o passo `Então` declara e valida o código esperado; `/ping` utiliza 201 conforme a API.
-- **Dados compartilhados:** os testes iniciais apenas leem a API pública. A futura suíte de escrita deverá criar suas próprias reservas e limpar os dados que criar.
+- **Dados compartilhados:** os filtros de reservas usam dados próprios com nomes únicos e limpeza no teardown, evitando depender dos registros públicos existentes.
 - **Falhas visíveis:** não há repetição automática para transformar falhas em sucesso. Indisponibilidade da API pública deve ser investigada pelos relatórios.
 
 ## Referências
