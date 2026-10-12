@@ -19,6 +19,23 @@ eu enviar uma requisição para o endpoint de criação de token
     ${response}=    POST On Session    booker    /auth    json=${AUTH_PAYLOAD}    expected_status=any
     VAR    ${RESPONSE}    ${response}    scope=TEST
 
+as credenciais possuem um usuário incorreto
+    Set To Dictionary    ${AUTH_PAYLOAD}    username=usuario_incorreto
+
+as credenciais possuem uma senha incorreta
+    Set To Dictionary    ${AUTH_PAYLOAD}    password=senha_incorreta
+
+o campo de credencial foi omitido
+    [Arguments]    ${field}
+    Remove From Dictionary    ${AUTH_PAYLOAD}    ${field}
+
+a resposta deve informar credenciais inválidas sem criar token
+    Should Contain    ${RESPONSE.headers}[Content-Type]    application/json
+    ${body}=    Set Variable    ${RESPONSE.json()}
+    Dictionary Should Contain Key    ${body}    reason
+    Should Be Equal    ${body}[reason]    Bad credentials
+    Dictionary Should Not Contain Key    ${body}    token
+
 a resposta deve conter um token de autenticação
     Should Not Be Equal    ${RESPONSE}    ${None}    Envie uma requisição antes de validar a resposta.
     Should Contain    ${RESPONSE.headers}[Content-Type]    application/json

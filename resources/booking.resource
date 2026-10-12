@@ -15,6 +15,8 @@ ${BOOKING_PAYLOAD}    ${None}
 ${CREATED_BOOKING_ID}    ${None}
 ${UPDATED_BOOKING_PAYLOAD}    ${None}
 ${PARTIAL_BOOKING_PAYLOAD}    ${None}
+${DATE_FILTER_FIELD}    ${None}
+${DATE_FILTER_VALUE}    2026-11-10
 
 *** Keywords ***
 Preparar consulta de reservas
@@ -145,11 +147,25 @@ eu enviar uma requisição para o endpoint de criação de reserva
     ...    json=${BOOKING_PAYLOAD}    headers=${headers}    expected_status=any
     VAR    ${RESPONSE}    ${response}    scope=TEST
     # Registra o ID antes das assertions para permitir a limpeza se uma validação falhar.
-    ${body}=    Set Variable    ${response.json()}
+    TRY
+        ${body}=    Set Variable    ${response.json()}
+    EXCEPT
+        VAR    ${body}    ${None}
+    END
     ${has_id}=    Evaluate    isinstance($body, dict) and type($body.get('bookingid')) is int
     IF    ${has_id}
         VAR    ${CREATED_BOOKING_ID}    ${body}[bookingid]    scope=TEST
         Append To List    ${CREATED_BOOKING_IDS}    ${CREATED_BOOKING_ID}
+    ELSE
+        # Uma resposta de criação inválida pode não trazer o ID; o nome UUID permite limpeza segura.
+        ${can_search}=    Evaluate    isinstance($BOOKING_PAYLOAD.get('firstname'), str) and $BOOKING_PAYLOAD['firstname'].startswith('QA') and len($BOOKING_PAYLOAD['firstname']) >= 34
+        IF    ${can_search}
+            ${filters}=    Create Dictionary    firstname=${BOOKING_PAYLOAD}[firstname]
+            ${lookup}=    GET On Session    booker    ${BOOKING_ENDPOINT}    params=${filters}    expected_status=200
+            FOR    ${item}    IN    @{lookup.json()}
+                Append To List    ${CREATED_BOOKING_IDS}    ${item}[bookingid]
+            END
+        END
     END
 
 a resposta deve conter o ID e os dados da reserva criada
@@ -217,10 +233,10 @@ eu atualizar a reserva com um token inválido
     Enviar atualização completa da reserva    invalido${invalid_token}
 
 Enviar atualização completa da reserva
-    [Arguments]    ${token}=${None}
+    [Arguments]    ${token}=${None}    ${basic_auth}=${None}
     Should Not Be Equal    ${UPDATED_BOOKING_PAYLOAD}    ${None}    Prepare os dados da atualização.
     # Sessão exclusiva para garantir que o caso sem autenticação não herde cookies.
-    Create Session    booker_update    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}
+    Create Session    booker_update    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}    auth=${basic_auth}
     ${headers}=    Create Dictionary    Accept=application/json
     ${cookies}=    Create Dictionary
     IF    $token is not None
@@ -271,9 +287,9 @@ eu atualizar parcialmente a reserva com um token inválido
     Enviar atualização parcial da reserva    invalido${invalid_token}
 
 Enviar atualização parcial da reserva
-    [Arguments]    ${token}=${None}
+    [Arguments]    ${token}=${None}    ${basic_auth}=${None}
     Should Not Be Equal    ${PARTIAL_BOOKING_PAYLOAD}    ${None}    Prepare os dados da atualização parcial.
-    Create Session    booker_partial    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}
+    Create Session    booker_partial    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}    auth=${basic_auth}
     ${headers}=    Create Dictionary    Accept=application/json
     ${cookies}=    Create Dictionary
     IF    $token is not None
@@ -297,9 +313,9 @@ eu excluir a reserva com um token inválido
     Enviar exclusão da reserva    invalido${invalid_token}
 
 Enviar exclusão da reserva
-    [Arguments]    ${token}=${None}
+    [Arguments]    ${token}=${None}    ${basic_auth}=${None}
     Should Not Be Equal    ${CREATED_BOOKING_ID}    ${None}    Prepare uma reserva antes de excluí-la.
-    Create Session    booker_delete    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}
+    Create Session    booker_delete    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}    auth=${basic_auth}
     ${cookies}=    Create Dictionary
     IF    $token is not None
         Set To Dictionary    ${cookies}    token=${token}
@@ -320,6 +336,135 @@ Validar dados da reserva
     ...    isinstance($booking, dict) and isinstance($booking.get('firstname'), str) and isinstance($booking.get('lastname'), str) and type($booking.get('totalprice')) is int and type($booking.get('depositpaid')) is bool and isinstance($booking.get('bookingdates'), dict) and isinstance($booking.get('additionalneeds'), str)
     Should Be True    ${valid_types}    Os campos da reserva devem possuir os tipos esperados.
     Dictionaries Should Be Equal    ${booking}    ${expected_payload}
+
+que possuo reservas próprias antes, no limite e depois da data de filtro
+    [Arguments]    ${field}
+    ${suffix}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    VAR    ${BOOKING_FIRSTNAME}    Datas${suffix}    scope=TEST
+    VAR    ${DATE_FILTER_FIELD}    ${field}    scope=TEST
+    Obter token para limpeza de reservas
+    FOR    ${day}    IN    2026-11-09    2026-11-10    2026-11-11
+        ${dates}=    Create Dictionary    checkin=${day}    checkout=2026-11-15
+        IF    $field == 'checkout'
+            ${dates}=    Create Dictionary    checkin=2026-11-01    checkout=${day}
+        END
+        ${payload}=    Create Dictionary    firstname=${BOOKING_FIRSTNAME}    lastname=Filtro
+        ...    totalprice=${150}    depositpaid=${True}    bookingdates=${dates}
+        ${response}=    POST On Session    booker    ${BOOKING_ENDPOINT}    json=${payload}    expected_status=200
+        ${body}=    Set Variable    ${response.json()}
+        Append To List    ${CREATED_BOOKING_IDS}    ${body}[bookingid]
+    END
+
+eu consultar os IDs por data posterior ao limite
+    ${filters}=    Create Dictionary    firstname=${BOOKING_FIRSTNAME}
+    ...    ${DATE_FILTER_FIELD}=${DATE_FILTER_VALUE}
+    Consultar IDs de reservas    ${filters}
+
+a resposta deve incluir as reservas posteriores e excluir as anteriores ao limite
+    ${ids}=    Obter IDs da resposta
+    # Isola o resultado acima do limite; os casos de fronteira verificam a igualdade separadamente.
+    List Should Contain Value    ${ids}    ${CREATED_BOOKING_IDS}[2]
+    List Should Not Contain Value    ${ids}    ${CREATED_BOOKING_IDS}[0]
+
+a resposta deve incluir a reserva exatamente na data limite
+    ${ids}=    Obter IDs da resposta
+    List Should Contain Value    ${ids}    ${CREATED_BOOKING_IDS}[1]
+
+o campo obrigatório da reserva foi omitido
+    [Arguments]    ${field}
+    IF    '.' in $field
+        ${key}=    Evaluate    $field.split('.')[1]
+        Remove From Dictionary    ${BOOKING_PAYLOAD}[bookingdates]    ${key}
+    ELSE
+        Remove From Dictionary    ${BOOKING_PAYLOAD}    ${field}
+    END
+
+o campo da reserva possui valor inválido
+    [Arguments]    ${field}    ${value}
+    Set To Dictionary    ${BOOKING_PAYLOAD}    ${field}=${value}
+
+o preço da reserva foi definido como
+    [Arguments]    ${price}
+    Set To Dictionary    ${BOOKING_PAYLOAD}    totalprice=${price}
+
+os nomes da reserva estão vazios
+    Set To Dictionary    ${BOOKING_PAYLOAD}    firstname=${EMPTY}    lastname=${EMPTY}
+
+os nomes da reserva contêm somente espaços
+    Set To Dictionary    ${BOOKING_PAYLOAD}    firstname=${SPACE}${SPACE}    lastname=${SPACE}${SPACE}
+
+as datas da reserva estão em ordem invertida
+    ${dates}=    Create Dictionary    checkin=2026-11-12    checkout=2026-11-10
+    Set To Dictionary    ${BOOKING_PAYLOAD}    bookingdates=${dates}
+
+as datas da reserva representam o mesmo dia
+    ${dates}=    Create Dictionary    checkin=2026-11-10    checkout=2026-11-10
+    Set To Dictionary    ${BOOKING_PAYLOAD}    bookingdates=${dates}
+
+a API deve rejeitar os dados inválidos da reserva
+    ${rejected}=    Evaluate    $RESPONSE.status_code in (400, 422, 500)
+    Run Keyword And Continue On Failure    Should Be True    ${rejected}
+    ...    Esperada rejeição de entrada inválida (400/422 ou o 500 usado por esta API), recebido HTTP ${RESPONSE.status_code}.
+
+a criação rejeitada não deve retornar um ID de reserva
+    Should Be Equal    ${CREATED_BOOKING_ID}    ${None}    A requisição inválida criou uma reserva.
+    Should Be Empty    ${CREATED_BOOKING_IDS}    A requisição inválida persistiu uma reserva.
+
+eu atualizar a reserva com JSON malformado e autenticação válida
+    ${headers}=    Create Dictionary    Content-Type=application/json    Accept=application/json
+    ${cookies}=    Create Dictionary    token=${CLEANUP_TOKEN}
+    ${response}=    PUT On Session    booker    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    data={"firstname":    headers=${headers}    cookies=${cookies}    expected_status=any
+    VAR    ${RESPONSE}    ${response}    scope=TEST
+
+o corpo da atualização omite um campo obrigatório
+    [Arguments]    ${field}
+    Remove From Dictionary    ${UPDATED_BOOKING_PAYLOAD}    ${field}
+
+dados para atualizar somente o preço da reserva
+    ${changes}=    Create Dictionary    totalprice=${275}
+    Preparar dados da atualização parcial    ${changes}
+
+dados para atualizar somente as necessidades adicionais da reserva
+    ${changes}=    Create Dictionary    additionalneeds=Dinner
+    Preparar dados da atualização parcial    ${changes}
+
+dados para atualizar somente as datas da reserva
+    ${dates}=    Create Dictionary    checkin=2026-12-15    checkout=2026-12-18
+    ${changes}=    Create Dictionary    bookingdates=${dates}
+    Preparar dados da atualização parcial    ${changes}
+
+dados para atualizar somente a data de entrada da reserva
+    ${dates}=    Create Dictionary    checkin=2026-11-11
+    ${changes}=    Create Dictionary    bookingdates=${dates}
+    Preparar dados da atualização parcial    ${changes}
+    ${expected_dates}=    Copy Dictionary    ${BOOKING_PAYLOAD}[bookingdates]
+    Set To Dictionary    ${expected_dates}    checkin=2026-11-11
+    Set To Dictionary    ${UPDATED_BOOKING_PAYLOAD}    bookingdates=${expected_dates}
+
+eu atualizar a reserva com Basic Auth válida
+    ${credentials}=    Create List    ${AUTH_USERNAME}    ${AUTH_PASSWORD}
+    Enviar atualização completa da reserva    basic_auth=${credentials}
+
+eu atualizar a reserva com Basic Auth inválida
+    ${credentials}=    Create List    ${AUTH_USERNAME}    senha_incorreta
+    Enviar atualização completa da reserva    basic_auth=${credentials}
+
+eu atualizar parcialmente a reserva com Basic Auth válida
+    ${credentials}=    Create List    ${AUTH_USERNAME}    ${AUTH_PASSWORD}
+    Enviar atualização parcial da reserva    basic_auth=${credentials}
+
+eu atualizar parcialmente a reserva com Basic Auth inválida
+    ${credentials}=    Create List    ${AUTH_USERNAME}    senha_incorreta
+    Enviar atualização parcial da reserva    basic_auth=${credentials}
+
+eu excluir a reserva com Basic Auth válida
+    ${credentials}=    Create List    ${AUTH_USERNAME}    ${AUTH_PASSWORD}
+    Enviar exclusão da reserva    basic_auth=${credentials}
+
+eu excluir a reserva com Basic Auth inválida
+    ${credentials}=    Create List    ${AUTH_USERNAME}    senha_incorreta
+    Enviar exclusão da reserva    basic_auth=${credentials}
 
 Limpar reservas da consulta
     Limpar reservas do teste

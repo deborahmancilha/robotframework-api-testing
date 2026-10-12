@@ -11,7 +11,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 - **Repositório:** [robotframework-api-testing](https://github.com/deborahmancilha/robotframework-api-testing)
 
-> **Etapa atual:** projeto publicado no GitHub, com cenários para as oito operações documentadas e integração contínua validada no GitHub Actions. Os relatórios são disponibilizados como artefatos de cada execução.
+> **Etapa atual:** projeto publicado no GitHub, com cenários para as oito operações documentadas e integração contínua validada no GitHub Actions. A cobertura ampliada inclui testes negativos, limites e Basic Auth; a existência de um cenário não garante que o serviço cumpra seu contrato. A cobertura ampliada inclui testes negativos, limites e Basic Auth; a existência de um cenário não garante que o serviço cumpra seu contrato. Os relatórios são disponibilizados como artefatos de cada execução.
 
 ## O que este projeto demonstra
 
@@ -37,45 +37,120 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 
 ## Cobertura implementada
 
+As oito suítes possuem **60 casos de teste**, organizados por operação. A numeração segue a ordem lógica abaixo; os testes mantêm dados próprios e não dependem dessa ordem de execução. A ampliação também inclui cenários que expõem divergências do serviço; veja os resultados abaixo.
+
+| Suíte | CTs | Quantidade |
+| --- | --- | --- |
+| `health_check.robot` | CT01 | 1 |
+| `create_token.robot` | CT02–CT06 | 5 |
+| `get_booking_ids.robot` | CT07–CT15 | 9 |
+| `get_booking.robot` | CT16–CT17 | 2 |
+| `create_booking.robot` | CT18–CT36 | 19 |
+| `update_booking.robot` | CT37–CT44 | 8 |
+| `partial_update_booking.robot` | CT45–CT54 | 10 |
+| `delete_booking.robot` | CT55–CT60 | 6 |
+
 | Cenário | Endpoint | Verificações |
 | --- | --- | --- |
-| **CT01 - API deve estar disponível** | `GET /ping` | HTTP 201 |
-| **CT02 - API deve criar um token com credenciais válidas** | `POST /auth` | HTTP 200, conteúdo JSON e campo `token` como string não vazia |
-| **CT03 - API deve listar os IDs das reservas** | `GET /booking` | HTTP 200, lista JSON, IDs inteiros e sem duplicatas |
-| **CT04 - API deve filtrar os IDs das reservas pelo primeiro nome** | `GET /booking?firstname=...` | HTTP 200 e somente os dois IDs esperados |
-| **CT05 - API deve filtrar os IDs das reservas pelo sobrenome** | `GET /booking?lastname=...` | HTTP 200 e somente os dois IDs esperados |
-| **CT06 - API deve filtrar os IDs das reservas pelo nome e sobrenome** | `GET /booking?firstname=...&lastname=...` | HTTP 200 e somente o ID que combina ambos os campos |
-| **CT07 - API deve retornar uma lista vazia para um nome sem correspondência** | `GET /booking?firstname=...` | HTTP 200 e lista JSON vazia |
-| **CT08 - API deve consultar uma reserva existente pelo ID** | `GET /booking/{id}` | HTTP 200, JSON e dados iguais aos cadastrados |
-| **CT09 - API deve retornar não encontrado para uma reserva excluída** | `GET /booking/{id}` | HTTP 404 após excluir a reserva própria |
-| **CT10 - API deve criar uma reserva com dados válidos** | `POST /booking` | HTTP 200, ID inteiro, dados retornados e persistidos iguais aos enviados |
-| **CT11 - API deve criar uma reserva com depósito não pago** | `POST /booking` | Preservação de `depositpaid=false` na criação e consulta |
-| **CT12 - API deve preservar acentos e apóstrofo nos nomes da reserva** | `POST /booking` | Preservação dos nomes na criação e consulta |
-| **CT13 - API deve atualizar todos os campos de uma reserva com autenticação válida** | `PUT /booking/{id}` | HTTP 200, dados atualizados e persistência no mesmo ID |
-| **CT14 - API deve rejeitar a atualização de uma reserva sem autenticação** | `PUT /booking/{id}` | HTTP 403 e dados originais preservados |
-| **CT15 - API deve rejeitar a atualização de uma reserva com token inválido** | `PUT /booking/{id}` | HTTP 403 e dados originais preservados |
-| **CT16 - API deve atualizar somente o nome e sobrenome da reserva** | `PATCH /booking/{id}` | HTTP 200, nomes alterados, demais campos preservados e persistência |
-| **CT17 - API deve atualizar somente o depósito da reserva para não pago** | `PATCH /booking/{id}` | HTTP 200, depósito false, demais campos preservados e persistência |
-| **CT18 - API deve rejeitar a atualização parcial sem autenticação** | `PATCH /booking/{id}` | HTTP 403 e dados originais preservados |
-| **CT19 - API deve rejeitar a atualização parcial com token inválido** | `PATCH /booking/{id}` | HTTP 403 e dados originais preservados |
-| **CT20 - API deve excluir uma reserva com autenticação válida** | `DELETE /booking/{id}` | HTTP 201 e GET posterior com HTTP 404 |
-| **CT21 - API deve rejeitar a exclusão de uma reserva sem autenticação** | `DELETE /booking/{id}` | HTTP 403 e reserva intacta |
-| **CT22 - API deve rejeitar a exclusão de uma reserva com token inválido** | `DELETE /booking/{id}` | HTTP 403 e reserva intacta |
-| **CT23 - API deve rejeitar uma nova exclusão de uma reserva já excluída** | `DELETE /booking/{id}` | HTTP 405 e GET posterior com HTTP 404 |
+| **CT01 - API deve estar disponível** | `GET /ping` | Valida a disponibilidade da API Restful Booker. |
+| **CT02 - API deve criar um token com credenciais válidas** | `POST /auth` | Valida a criação de token com as credenciais públicas documentadas da API. |
+| **CT03 - API deve negar token para usuário incorreto** | `POST /auth` | Valida o comportamento da API: HTTP 200, reason Bad credentials e ausência de token. |
+| **CT04 - API deve negar token para senha incorreta** | `POST /auth` | Valida o comportamento da API: HTTP 200, reason Bad credentials e ausência de token. |
+| **CT05 - API deve negar token sem o campo username** | `POST /auth` | Valida o comportamento da API: HTTP 200, reason Bad credentials e ausência de token. |
+| **CT06 - API deve negar token sem o campo password** | `POST /auth` | Valida o comportamento da API: HTTP 200, reason Bad credentials e ausência de token. |
+| **CT07 - API deve listar os IDs das reservas** | `GET /booking` | Valida status, formato JSON, tipo dos IDs e ausência de duplicatas. |
+| **CT08 - API deve filtrar os IDs das reservas pelo primeiro nome** | `GET /booking` | Valida que o filtro firstname retorna as duas reservas próprias com o mesmo primeiro nome. |
+| **CT09 - API deve filtrar os IDs das reservas pelo sobrenome** | `GET /booking` | Valida que o filtro lastname retorna as duas reservas próprias com o mesmo sobrenome. |
+| **CT10 - API deve filtrar os IDs das reservas pelo nome e sobrenome** | `GET /booking` | Valida que ambos os filtros são aplicados, excluindo reservas que combinam apenas um dos campos. |
+| **CT11 - API deve retornar uma lista vazia para um nome sem correspondência** | `GET /booking` | Valida uma busca válida sem resultados usando um nome único diferente das reservas criadas. |
+| **CT12 - API deve filtrar reservas posteriores ao limite de checkin** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT13 - API deve incluir reservas no limite do filtro checkin** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT14 - API deve filtrar reservas posteriores ao limite de checkout** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT15 - API deve incluir reservas no limite do filtro checkout** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT16 - API deve consultar uma reserva existente pelo ID** | `GET /booking/{id}` | Valida status 200 e os dados completos de uma reserva própria consultada por ID. |
+| **CT17 - API deve retornar não encontrado para uma reserva excluída** | `GET /booking/{id}` | Valida status 404 ao consultar o ID de uma reserva própria previamente excluída. |
+| **CT18 - API deve criar uma reserva com dados válidos** | `POST /booking` | Valida status, ID, dados retornados e persistência de uma reserva completa. |
+| **CT19 - API deve criar uma reserva com depósito não pago** | `POST /booking` | Valida que depositpaid false é preservado na criação e na consulta. |
+| **CT20 - API deve preservar acentos e apóstrofo nos nomes da reserva** | `POST /booking` | Valida a preservação dos nomes com acentos e apóstrofo no retorno e na persistência. |
+| **CT21 - API deve rejeitar criação sem o campo obrigatório firstname** | `POST /booking` | Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida. |
+| **CT22 - API deve rejeitar criação sem o campo obrigatório lastname** | `POST /booking` | Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida. |
+| **CT23 - API deve rejeitar criação sem o campo obrigatório totalprice** | `POST /booking` | Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida. |
+| **CT24 - API deve rejeitar criação sem o campo obrigatório depositpaid** | `POST /booking` | Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida. |
+| **CT25 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkin** | `POST /booking` | Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida. |
+| **CT26 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkout** | `POST /booking` | Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida. |
+| **CT27 - API deve rejeitar criação com primeiro nome numérico** | `POST /booking` | Verifica rejeição de tipo incompatível com o contrato da API. |
+| **CT28 - API deve rejeitar criação com preço não numérico** | `POST /booking` | Verifica rejeição de tipo incompatível com o contrato da API. |
+| **CT29 - API deve rejeitar criação com depósito como texto** | `POST /booking` | Verifica rejeição de tipo incompatível com o contrato da API. |
+| **CT30 - API deve rejeitar criação com datas como texto** | `POST /booking` | Verifica rejeição de tipo incompatível com o contrato da API. |
+| **CT31 - API deve rejeitar criação com nomes vazios** | `POST /booking` | Verifica entrada inválida; datas invertidas representam uma expectativa de domínio adotada pelo projeto. |
+| **CT32 - API deve rejeitar criação com nomes com somente espaços** | `POST /booking` | Verifica entrada inválida; datas invertidas representam uma expectativa de domínio adotada pelo projeto. |
+| **CT33 - API deve rejeitar criação com datas invertidas** | `POST /booking` | Verifica entrada inválida; datas invertidas representam uma expectativa de domínio adotada pelo projeto. |
+| **CT34 - API deve criar uma reserva com preço zero** | `POST /booking` | Caracteriza um limite de dados aceito pelo serviço, sem presumir um máximo documentado. |
+| **CT35 - API deve preservar um preço inteiro elevado** | `POST /booking` | Caracteriza um limite de dados aceito pelo serviço, sem presumir um máximo documentado. |
+| **CT36 - API deve criar uma reserva com entrada e saída no mesmo dia** | `POST /booking` | Caracteriza um limite de dados aceito pelo serviço, sem presumir um máximo documentado. |
+| **CT37 - API deve atualizar todos os campos de uma reserva com autenticação válida** | `PUT /booking/{id}` | Valida a substituição dos dados, incluindo depósito true para false, e persistência no mesmo ID. |
+| **CT38 - API deve rejeitar a atualização de uma reserva sem autenticação** | `PUT /booking/{id}` | Valida status 403 e preservação dos dados originais após PUT sem credenciais. |
+| **CT39 - API deve rejeitar a atualização de uma reserva com token inválido** | `PUT /booking/{id}` | Valida status 403 e preservação dos dados originais após PUT com token inválido. |
+| **CT40 - API deve rejeitar atualização com JSON malformado** | `PUT /booking/{id}` | Valida HTTP 400 e reserva intacta após erro de sintaxe JSON. |
+| **CT41 - API deve rejeitar atualização sem um campo obrigatório** | `PUT /booking/{id}` | Valida HTTP 400 e reserva intacta após omissão de firstname. |
+| **CT42 - API deve rejeitar atualização de uma reserva inexistente** | `PUT /booking/{id}` | Caracteriza HTTP 405 no PUT de uma reserva própria previamente excluída. |
+| **CT43 - API deve atualizar uma reserva com Basic Auth válida** | `PUT /booking/{id}` | Valida Basic Auth sem cookie de token. |
+| **CT44 - API deve rejeitar a atualização de uma reserva com Basic Auth inválida** | `PUT /booking/{id}` | Valida HTTP 403 e dados preservados sem cookie de token. |
+| **CT45 - API deve atualizar somente o nome e sobrenome da reserva** | `PATCH /booking/{id}` | Valida a alteração dos nomes, a preservação dos campos omitidos e a persistência no mesmo ID. |
+| **CT46 - API deve atualizar somente o depósito da reserva para não pago** | `PATCH /booking/{id}` | Valida depositpaid false, a preservação dos campos omitidos e a persistência. |
+| **CT47 - API deve rejeitar a atualização parcial sem autenticação** | `PATCH /booking/{id}` | Valida status 403 e dados originais preservados após PATCH sem credenciais. |
+| **CT48 - API deve rejeitar a atualização parcial com token inválido** | `PATCH /booking/{id}` | Valida status 403 e dados originais preservados após PATCH com token inválido. |
+| **CT49 - API deve atualizar somente o preço da reserva** | `PATCH /booking/{id}` | Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados. |
+| **CT50 - API deve atualizar somente as necessidades adicionais da reserva** | `PATCH /booking/{id}` | Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados. |
+| **CT51 - API deve atualizar somente as datas da reserva** | `PATCH /booking/{id}` | Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados. |
+| **CT52 - API deve atualizar somente a data de entrada da reserva** | `PATCH /booking/{id}` | Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados. |
+| **CT53 - API deve atualizar parcialmente uma reserva com Basic Auth válida** | `PATCH /booking/{id}` | Valida Basic Auth sem cookie de token. |
+| **CT54 - API deve rejeitar a atualização parcial de uma reserva com Basic Auth inválida** | `PATCH /booking/{id}` | Valida HTTP 403 e dados preservados sem cookie de token. |
+| **CT55 - API deve excluir uma reserva com autenticação válida** | `DELETE /booking/{id}` | Valida status 201 e confirma a exclusão com GET retornando 404. |
+| **CT56 - API deve rejeitar a exclusão de uma reserva sem autenticação** | `DELETE /booking/{id}` | Valida status 403 e confirma que a reserva permanece existente e intacta. |
+| **CT57 - API deve rejeitar a exclusão de uma reserva com token inválido** | `DELETE /booking/{id}` | Valida status 403 e confirma que a reserva permanece existente e intacta. |
+| **CT58 - API deve rejeitar uma nova exclusão de uma reserva já excluída** | `DELETE /booking/{id}` | Valida status 405 para DELETE autenticado em ID próprio já excluído. |
+| **CT59 - API deve excluir uma reserva com Basic Auth válida** | `DELETE /booking/{id}` | Valida Basic Auth sem cookie de token. |
+| **CT60 - API deve rejeitar a exclusão de uma reserva com Basic Auth inválida** | `DELETE /booking/{id}` | Valida HTTP 403 e dados preservados sem cookie de token. |
 
-O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token. Os cenários de PUT, PATCH e DELETE obtêm seus próprios tokens e verificam a autenticação por cookie, incluindo rejeição de requisições sem autenticação e com token inválido.
+### Critérios e dados de teste
 
-GetBookingIds utiliza o contrato da [API Docs — GetBookingIds](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-GetBookings): status 200 e lista de objetos com IDs únicos. A validação de inteiro segue o formato dos identificadores da API, sendo mais restrita que o tipo `number` documentado. A listagem sem filtros aceita uma lista vazia e não exige quantidade nem ordem fixas.
+- **CreateToken:** usa as credenciais públicas `admin` e `password123`. Credenciais incorretas ou incompletas retornam HTTP 200 com `reason: Bad credentials`, conforme a implementação; os cenários negativos também verificam ausência de `token`.
+- **GetBookingIds:** filtros por nome, sobrenome, `checkin` e `checkout`. Os testes de data criam três reservas com datas antes, exatamente no limite e depois do filtro, isoladas por nome UUID. Os critérios de direção e igualdade seguem a API Docs, que descreve data maior ou igual ao filtro. Divergências entre documentação e serviço são falhas de contrato, não alterações das expectativas para aprovar a suíte.
+- **GetBooking:** consulta uma reserva própria e verifica HTTP 404 após sua exclusão.
+- **CreateBooking:** campos obrigatórios ausentes, tipos incompatíveis, nomes vazios/espaços e ordem das datas, além de cenários válidos com preço zero, preço inteiro elevado e estadia no mesmo dia. O valor `2147483647` é um ponto de referência de teste, não um máximo de negócio documentado. Rejeitar datas invertidas é uma expectativa de domínio adotada pelo projeto; os demais limites não documentados são descritos como caracterização do comportamento.
+- **UpdateBooking:** atualização completa, JSON malformado, campo obrigatório ausente e reserva inexistente, com verificação de persistência ou preservação dos dados originais.
+- **PartialUpdateBooking:** alterações de nomes, depósito, preço, necessidades adicionais e datas. Na alteração somente do check-in, o checkout deve ser preservado. O objeto esperado é uma cópia independente dos dados originais com somente as mudanças solicitadas.
+- **Basic Auth:** cenários válidos e inválidos em PUT, PATCH e DELETE, usando sessões exclusivas sem cookie de token. A preparação e a limpeza continuam utilizando token próprio.
 
-Os cenários com filtros criam três reservas com nomes únicos gerados por UUID: duas compartilham o primeiro nome e duas compartilham o sobrenome. A combinação de nome e sobrenome identifica somente uma delas, permitindo detectar filtros ignorados. Cada caso mantém seus próprios IDs e token de limpeza; no teardown, exclui apenas suas reservas, tenta limpar as demais mesmo se uma exclusão falhar e encerra as sessões. Falhas na limpeza reprovam o caso. A criação e a exclusão são preparação e limpeza dos testes de consulta, não suítes completas dessas operações.
+A documentação e a implementação de referência estão em [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html) e [código-fonte oficial](https://github.com/mwinteringham/restful-booker). O serviço utiliza códigos específicos: 201 para DELETE bem-sucedido, 403 para autenticação rejeitada e 405 para PUT/DELETE em ID inexistente. O POST de criação pode responder 500 a campos obrigatórios ausentes; isso caracteriza a rejeição atual, mas **não representa um tratamento adequado de entrada inválida**. Os testes de contrato não presumem que tipos inválidos ou datas invertidas sejam válidos porque o serviço os aceitou.
 
-A API é pública e compartilhada; reinicializações ou alterações por terceiros durante um caso podem causar falhas. Filtros por `checkin` e `checkout`, também documentados, permanecem pendentes. Busca sem correspondência é um cenário válido com resultado vazio; não se presume erro HTTP para esse caso.
+### Preparação e limpeza
 
-GetBooking consulta uma reserva própria pelo ID e compara o objeto JSON com os dados cadastrados. O cenário negativo exclui sua própria reserva antes da consulta, evitando presumir que um ID fixo não existe. O status 404 é comportamento da [implementação da API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js), verificado na execução; a API Docs de GetBooking descreve o retorno de sucesso. A reserva excluída é removida da lista de limpeza para não tentar excluí-la novamente.
+Cada caso cria suas próprias reservas com nomes únicos, registra os IDs e exclui somente esses registros no teardown, mesmo após falhas de validação. Na criação, registramos o ID antes das assertions. Se a resposta não trouxer um ID utilizável, a limpeza tenta localizar exclusivamente o nome UUID do payload, inclusive após respostas de erro. Não são excluídas reservas públicas genéricas. Uma exclusão concluída remove o ID da lista de limpeza; falhas de limpeza reprovam o caso e as sessões são encerradas em `FINALLY`.
 
-CreateBooking segue o [contrato documentado](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-CreateBooking): envia `firstname`, `lastname`, `totalprice`, `depositpaid`, `bookingdates` e `additionalneeds` em JSON, solicitando retorno JSON pelo header `Accept`. O sucesso esperado é HTTP 200, com `bookingid` e `booking`. Os CT10–CT12 são cenários positivos; as variações de booleano e caracteres são escolhas de cobertura do projeto. Cada caso utiliza um nome único, compara os campos retornados com o payload e consulta `GET /booking/{id}` para verificar persistência. O POST não recebe token; a autenticação serve à limpeza por DELETE.
+A API é pública e compartilhada; reinicializações ou alterações de terceiros durante o caso podem causar falhas. XML, formulários, desempenho, expiração de tokens e combinações exaustivas de campos continuam fora da cobertura atual.
 
-O ID é registrado antes das assertions de conteúdo para permitir exclusão mesmo quando uma validação posterior falha. Se a API criar a reserva sem retornar um ID utilizável, a limpeza por ID não poderá identificá-la. Campos ausentes, tipos inválidos, regras de datas e outros formatos de requisição ainda não estão cobertos; os códigos de erro não são presumidos, pois a API Docs de CreateBooking descreve somente a resposta de sucesso.
+### Divergências observadas na ampliação
+
+Na validação desta etapa, a suíte completa executou 60 casos: **52 aprovados e 8 reprovados**. As mesmas oito divergências foram reproduzidas na confirmação, sem falhas de teardown.
+
+Os casos abaixo possuem a tag `known_bug` para facilitar sua investigação. Essa tag **não ignora os testes nem transforma falhas em sucesso**. A suíte completa e o workflow continuam executando esses cenários; enquanto as divergências persistirem, o resultado será reprovado. O badge representa o commit publicado no GitHub, não as alterações ainda locais.
+
+| CTs | Expectativa | Comportamento observado |
+| --- | --- | --- |
+| CT13 | `checkin` igual ao filtro deve ser incluído, conforme a API Docs | A reserva exatamente no limite é omitida |
+| CT14 | `checkout` posterior ao filtro deve ser incluído, conforme a API Docs | A consulta retorna reservas anteriores/no limite e omite a posterior |
+| CT28–CT29 | Tipos incompatíveis de preço e depósito devem ser rejeitados | POST aceita preço não numérico e depósito como texto com HTTP 200 |
+| CT31–CT32 | Nomes vazios ou com somente espaços devem ser rejeitados | POST aceita as entradas com HTTP 200 |
+| CT33 | Entrada posterior à saída deve ser rejeitada segundo a expectativa de domínio do projeto | POST aceita as datas invertidas; essa regra não é explicitada na API Docs e requer alinhamento de requisitos |
+| CT52 | PATCH apenas do check-in deve preservar o checkout | O checkout retorna como `0NaN-aN-aN` |
+
+Para investigar somente esses cenários:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --include known_bug --outputdir results/known-bugs tests
+```
 
 ## Executar no Windows
 
@@ -209,9 +284,9 @@ Para executar somente a operação UpdateBooking:
 .\.venv\Scripts\python.exe -m robot --outputdir results tests/update_booking.robot
 ```
 
-UpdateBooking envia o corpo completo por `PUT /booking/{id}`, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-UpdateBooking). O CT13 altera todos os campos, incluindo `depositpaid` de true para false, valida a resposta e consulta o mesmo ID para conferir persistência. Os CT14 e CT15 verificam rejeição sem autenticação ou com token inválido e consultam a reserva para garantir que seus dados originais foram preservados. O status 403 segue a [implementação da API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js) e é conferido na execução. Uma sessão exclusiva para PUT evita herdar cookies; a autenticação de preparação permanece disponível para a limpeza. Basic Auth, corpos inválidos e IDs inexistentes ainda não estão cobertos nesta suíte.
+UpdateBooking envia o corpo completo por PUT, com cenários positivos, entradas inválidas, ID inexistente e autenticação por token ou Basic Auth. Os detalhes de cobertura estão na tabela de cenários.
 
-PartialUpdateBooking envia somente os campos a alterar por `PATCH /booking/{id}`, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-PartialUpdateBooking). O resultado esperado é uma cópia independente dos dados originais com as alterações aplicadas. Comparar o objeto completo na resposta e na consulta posterior verifica também a preservação dos campos omitidos. Os casos de autenticação usam uma sessão exclusiva, verificam status 403 e confirmam que a reserva permaneceu intacta. Nesta etapa, estão cobertos nomes e depósito; alterações em datas, outros campos, Basic Auth, corpo inválido e ID inexistente permanecem pendentes. Os exemplos da API Docs mostram PUT em alguns trechos de PartialUpdateBooking, mas a operação e a rota na implementação utilizam PATCH.
+PartialUpdateBooking envia apenas as mudanças por PATCH. Os cenários verificam também os campos omitidos e a persistência, com autenticação por token e Basic Auth. A API Docs mostra PUT em alguns exemplos, mas a operação utiliza PATCH.
 
 Para executar somente a operação PartialUpdateBooking:
 
@@ -219,7 +294,7 @@ Para executar somente a operação PartialUpdateBooking:
 .\.venv\Scripts\python.exe -m robot --outputdir results tests/partial_update_booking.robot
 ```
 
-DeleteBooking utiliza reservas próprias e uma sessão exclusiva para excluir por `DELETE /booking/{id}`. O sucesso é HTTP 201, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-DeleteBooking), e a consulta posterior deve retornar 404. Sem autenticação ou com token inválido, verificamos status 403 e a preservação dos dados. Uma segunda exclusão autenticada do mesmo ID retorna 405 na [implementação desta API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js); esse status é específico do serviço, não uma regra geral para APIs REST. Quando o DELETE retorna 201, o ID sai da lista de limpeza para evitar outra exclusão no teardown. Basic Auth ainda não está coberto.
+DeleteBooking confirma a exclusão com uma consulta posterior e verifica a preservação das reservas em tentativas não autorizadas, por token ou Basic Auth. O status 405 na segunda exclusão é específico desta API.
 
 Para executar somente a operação DeleteBooking:
 
