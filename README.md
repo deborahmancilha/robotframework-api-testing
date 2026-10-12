@@ -10,7 +10,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 
-> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta, criação e atualização completa de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
+> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta, criação e atualização completa e parcial de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
 
 ## O que este projeto demonstra
 
@@ -53,6 +53,10 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 | **CT13 - API deve atualizar todos os campos de uma reserva com autenticação válida** | `PUT /booking/{id}` | HTTP 200, dados atualizados e persistência no mesmo ID |
 | **CT14 - API deve rejeitar a atualização de uma reserva sem autenticação** | `PUT /booking/{id}` | HTTP 403 e dados originais preservados |
 | **CT15 - API deve rejeitar a atualização de uma reserva com token inválido** | `PUT /booking/{id}` | HTTP 403 e dados originais preservados |
+| **CT16 - API deve atualizar somente o nome e sobrenome da reserva** | `PATCH /booking/{id}` | HTTP 200, nomes alterados, demais campos preservados e persistência |
+| **CT17 - API deve atualizar somente o depósito da reserva para não pago** | `PATCH /booking/{id}` | HTTP 200, depósito false, demais campos preservados e persistência |
+| **CT18 - API deve rejeitar a atualização parcial sem autenticação** | `PATCH /booking/{id}` | HTTP 403 e dados originais preservados |
+| **CT19 - API deve rejeitar a atualização parcial com token inválido** | `PATCH /booking/{id}` | HTTP 403 e dados originais preservados |
 
 O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
 
@@ -144,6 +148,7 @@ Projeto_outubro/
 │   ├── get_booking.robot
 │   ├── get_booking_ids.robot
 │   ├── health_check.robot
+│   ├── partial_update_booking.robot
 │   └── update_booking.robot
 ├── results/
 ├── .gitignore
@@ -165,7 +170,7 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | GetBooking | `tests/get_booking.robot` | Implementado |
 | CreateBooking | `tests/create_booking.robot` | Implementado |
 | UpdateBooking | `tests/update_booking.robot` | Implementado |
-| PartialUpdateBooking | `tests/partial_update_booking.robot` | Planejado |
+| PartialUpdateBooking | `tests/partial_update_booking.robot` | Implementado |
 | DeleteBooking | `tests/delete_booking.robot` | Planejado |
 
 Os arquivos planejados serão criados quando a automação da operação começar. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`.
@@ -198,7 +203,15 @@ Para executar somente a operação UpdateBooking:
 
 UpdateBooking envia o corpo completo por `PUT /booking/{id}`, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-UpdateBooking). O CT13 altera todos os campos, incluindo `depositpaid` de true para false, valida a resposta e consulta o mesmo ID para conferir persistência. Os CT14 e CT15 verificam rejeição sem autenticação ou com token inválido e consultam a reserva para garantir que seus dados originais foram preservados. O status 403 segue a [implementação da API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js) e é conferido na execução. Uma sessão exclusiva para PUT evita herdar cookies; a autenticação de preparação permanece disponível para a limpeza. Basic Auth, corpos inválidos e IDs inexistentes ainda não estão cobertos nesta suíte.
 
-Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking → UpdateBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
+PartialUpdateBooking envia somente os campos a alterar por `PATCH /booking/{id}`, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-PartialUpdateBooking). O resultado esperado é uma cópia independente dos dados originais com as alterações aplicadas. Comparar o objeto completo na resposta e na consulta posterior verifica também a preservação dos campos omitidos. Os casos de autenticação usam uma sessão exclusiva, verificam status 403 e confirmam que a reserva permaneceu intacta. Nesta etapa, estão cobertos nomes e depósito; alterações em datas, outros campos, Basic Auth, corpo inválido e ID inexistente permanecem pendentes. Os exemplos da API Docs mostram PUT em alguns trechos de PartialUpdateBooking, mas a operação e a rota na implementação utilizam PATCH.
+
+Para executar somente a operação PartialUpdateBooking:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests/partial_update_booking.robot
+```
+
+Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking → UpdateBooking → PartialUpdateBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
 
 ## Escrita dos cenários em BDD
 

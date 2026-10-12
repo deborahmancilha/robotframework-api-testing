@@ -14,6 +14,7 @@ ${CLEANUP_TOKEN}    ${None}
 ${BOOKING_PAYLOAD}    ${None}
 ${CREATED_BOOKING_ID}    ${None}
 ${UPDATED_BOOKING_PAYLOAD}    ${None}
+${PARTIAL_BOOKING_PAYLOAD}    ${None}
 
 *** Keywords ***
 Preparar consulta de reservas
@@ -116,6 +117,7 @@ Preparar criação de reserva
     VAR    ${BOOKING_PAYLOAD}    ${None}    scope=TEST
     VAR    ${CREATED_BOOKING_ID}    ${None}    scope=TEST
     VAR    ${UPDATED_BOOKING_PAYLOAD}    ${None}    scope=TEST
+    VAR    ${PARTIAL_BOOKING_PAYLOAD}    ${None}    scope=TEST
     Obter token para limpeza de reservas
 
 que possuo dados válidos para criar uma reserva
@@ -241,6 +243,48 @@ a reserva deve persistir os dados atualizados no mesmo ID
 
 a reserva deve manter os dados originais
     a reserva deve estar disponível para consulta com os dados enviados
+
+dados para atualizar somente o nome e sobrenome da reserva
+    ${suffix}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    ${changes}=    Create Dictionary    firstname=Parcial${suffix}    lastname=Novo${suffix}
+    Preparar dados da atualização parcial    ${changes}
+
+dados para atualizar somente o depósito para não pago
+    ${changes}=    Create Dictionary    depositpaid=${False}
+    Preparar dados da atualização parcial    ${changes}
+
+Preparar dados da atualização parcial
+    [Arguments]    ${changes}
+    ${expected}=    Copy Dictionary    ${BOOKING_PAYLOAD}    deepcopy=${True}
+    Set To Dictionary    ${expected}    &{changes}
+    VAR    ${PARTIAL_BOOKING_PAYLOAD}    ${changes}    scope=TEST
+    VAR    ${UPDATED_BOOKING_PAYLOAD}    ${expected}    scope=TEST
+
+eu atualizar parcialmente a reserva com autenticação válida
+    Enviar atualização parcial da reserva    ${CLEANUP_TOKEN}
+
+eu atualizar parcialmente a reserva sem autenticação
+    Enviar atualização parcial da reserva
+
+eu atualizar parcialmente a reserva com um token inválido
+    ${invalid_token}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    Enviar atualização parcial da reserva    invalido${invalid_token}
+
+Enviar atualização parcial da reserva
+    [Arguments]    ${token}=${None}
+    Should Not Be Equal    ${PARTIAL_BOOKING_PAYLOAD}    ${None}    Prepare os dados da atualização parcial.
+    Create Session    booker_partial    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}
+    ${headers}=    Create Dictionary    Accept=application/json
+    ${cookies}=    Create Dictionary
+    IF    $token is not None
+        Set To Dictionary    ${cookies}    token=${token}
+    END
+    ${response}=    PATCH On Session    booker_partial    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    json=${PARTIAL_BOOKING_PAYLOAD}    headers=${headers}    cookies=${cookies}    expected_status=any
+    VAR    ${RESPONSE}    ${response}    scope=TEST
+
+a resposta deve refletir a alteração parcial e preservar os demais campos
+    a resposta deve conter os dados atualizados da reserva
 
 Validar dados da reserva
     [Arguments]    ${booking}    ${expected_payload}=${BOOKING_PAYLOAD}
