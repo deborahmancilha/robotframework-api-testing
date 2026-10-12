@@ -3,14 +3,15 @@
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Robot Framework](https://img.shields.io/badge/Robot_Framework-7.5-00C0B5?logo=robotframework&logoColor=white)
 ![RequestsLibrary](https://img.shields.io/badge/RequestsLibrary-0.9.7-005571)
-![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
+[![API tests](https://github.com/deborahmancilha/robotframework-api-testing/actions/workflows/api-tests.yml/badge.svg?branch=main)](https://github.com/deborahmancilha/robotframework-api-testing/actions/workflows/api-tests.yml)
 
 Projeto pessoal de qualidade de software para automatizar verificações da API REST de reservas **RESTful Booker**. O objetivo é construir uma suíte legível, reproduzível e integrada ao GitHub Actions, com evidências que permitam investigar cada execução.
 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
+- **Repositório:** [robotframework-api-testing](https://github.com/deborahmancilha/robotframework-api-testing)
 
-> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta, criação, atualização completa e parcial e exclusão de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
+> **Etapa atual:** projeto publicado no GitHub, com cenários para as oito operações documentadas e integração contínua validada no GitHub Actions. Os relatórios são disponibilizados como artefatos de cada execução.
 
 ## O que este projeto demonstra
 
@@ -62,7 +63,7 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 | **CT22 - API deve rejeitar a exclusão de uma reserva com token inválido** | `DELETE /booking/{id}` | HTTP 403 e reserva intacta |
 | **CT23 - API deve rejeitar uma nova exclusão de uma reserva já excluída** | `DELETE /booking/{id}` | HTTP 405 e GET posterior com HTTP 404 |
 
-O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
+O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token. Os cenários de PUT, PATCH e DELETE obtêm seus próprios tokens e verificam a autenticação por cookie, incluindo rejeição de requisições sem autenticação e com token inválido.
 
 GetBookingIds utiliza o contrato da [API Docs — GetBookingIds](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-GetBookings): status 200 e lista de objetos com IDs únicos. A validação de inteiro segue o formato dos identificadores da API, sendo mais restrita que o tipo `number` documentado. A listagem sem filtros aceita uma lista vazia e não exige quantidade nem ordem fixas.
 
@@ -129,7 +130,9 @@ Abra `results/report.html` no navegador. Relatórios e ambiente virtual são ign
 
 O workflow `.github/workflows/api-tests.yml` executa a suíte em pushes, pull requests e acionamento manual. Ele configura Python 3.12, instala as dependências e publica `robot-reports` com retenção de 14 dias, mesmo quando os testes falham. Uma falha da suíte reprova o job.
 
-Depois de publicar o projeto no GitHub, consulte **Actions → API tests** e baixe o artefato da execução. A validação do workflow no runner do GitHub ainda está pendente. O badge de resultado será adicionado quando houver uma URL real do repositório.
+A integração contínua foi validada com sucesso no runner do GitHub, incluindo instalação das dependências, execução dos testes e publicação dos relatórios. Veja a [execução do commit que adicionou DeleteBooking](https://github.com/deborahmancilha/robotframework-api-testing/actions/runs/38282528654).
+
+Para consultar os resultados, abra [Actions → API tests](https://github.com/deborahmancilha/robotframework-api-testing/actions/workflows/api-tests.yml), selecione uma execução e baixe o artefato `robot-reports`. Extraia o arquivo e abra `report.html` para o resumo ou `log.html` para os detalhes. O badge no início deste README mostra o resultado do workflow na branch `main` e leva ao histórico de execuções.
 
 ## Estrutura
 
@@ -178,7 +181,7 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | PartialUpdateBooking | `tests/partial_update_booking.robot` | Implementado |
 | DeleteBooking | `tests/delete_booking.robot` | Implementado |
 
-Os arquivos planejados serão criados quando a automação da operação começar. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`.
+As oito operações possuem suítes implementadas. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`; a cobertura de cenários pode ser ampliada dentro de cada suíte.
 
 A separação segue a ideia de encapsular ações e detalhes técnicos usada no Page Object Model (POM). Para esta API, a camada de recursos representa operações de serviço: `tests/get_booking_ids.robot` descreve os cenários BDD, `booking.resource` implementa requisições, validações e dados de teste, e `common.resource` centraliza conexão e status. Não existem páginas ou seletores de interface nesta automação.
 
