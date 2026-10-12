@@ -10,7 +10,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 
-> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta de IDs e criação de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
+> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta, criação e atualização completa de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
 
 ## O que este projeto demonstra
 
@@ -50,6 +50,9 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 | **CT10 - API deve criar uma reserva com dados válidos** | `POST /booking` | HTTP 200, ID inteiro, dados retornados e persistidos iguais aos enviados |
 | **CT11 - API deve criar uma reserva com depósito não pago** | `POST /booking` | Preservação de `depositpaid=false` na criação e consulta |
 | **CT12 - API deve preservar acentos e apóstrofo nos nomes da reserva** | `POST /booking` | Preservação dos nomes na criação e consulta |
+| **CT13 - API deve atualizar todos os campos de uma reserva com autenticação válida** | `PUT /booking/{id}` | HTTP 200, dados atualizados e persistência no mesmo ID |
+| **CT14 - API deve rejeitar a atualização de uma reserva sem autenticação** | `PUT /booking/{id}` | HTTP 403 e dados originais preservados |
+| **CT15 - API deve rejeitar a atualização de uma reserva com token inválido** | `PUT /booking/{id}` | HTTP 403 e dados originais preservados |
 
 O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
 
@@ -140,7 +143,8 @@ Projeto_outubro/
 │   ├── create_token.robot
 │   ├── get_booking.robot
 │   ├── get_booking_ids.robot
-│   └── health_check.robot
+│   ├── health_check.robot
+│   └── update_booking.robot
 ├── results/
 ├── .gitignore
 ├── README.md
@@ -160,7 +164,7 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | GetBookingIds | `tests/get_booking_ids.robot` | Implementado |
 | GetBooking | `tests/get_booking.robot` | Implementado |
 | CreateBooking | `tests/create_booking.robot` | Implementado |
-| UpdateBooking | `tests/update_booking.robot` | Planejado |
+| UpdateBooking | `tests/update_booking.robot` | Implementado |
 | PartialUpdateBooking | `tests/partial_update_booking.robot` | Planejado |
 | DeleteBooking | `tests/delete_booking.robot` | Planejado |
 
@@ -186,7 +190,15 @@ Para executar somente a operação GetBooking:
 .\.venv\Scripts\python.exe -m robot --outputdir results tests/get_booking.robot
 ```
 
-Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
+Para executar somente a operação UpdateBooking:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests/update_booking.robot
+```
+
+UpdateBooking envia o corpo completo por `PUT /booking/{id}`, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-UpdateBooking). O CT13 altera todos os campos, incluindo `depositpaid` de true para false, valida a resposta e consulta o mesmo ID para conferir persistência. Os CT14 e CT15 verificam rejeição sem autenticação ou com token inválido e consultam a reserva para garantir que seus dados originais foram preservados. O status 403 segue a [implementação da API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js) e é conferido na execução. Uma sessão exclusiva para PUT evita herdar cookies; a autenticação de preparação permanece disponível para a limpeza. Basic Auth, corpos inválidos e IDs inexistentes ainda não estão cobertos nesta suíte.
+
+Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking → UpdateBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
 
 ## Escrita dos cenários em BDD
 

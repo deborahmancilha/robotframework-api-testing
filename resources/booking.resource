@@ -13,6 +13,7 @@ ${BOOKING_MISSING_NAME}    ${None}
 ${CLEANUP_TOKEN}    ${None}
 ${BOOKING_PAYLOAD}    ${None}
 ${CREATED_BOOKING_ID}    ${None}
+${UPDATED_BOOKING_PAYLOAD}    ${None}
 
 *** Keywords ***
 Preparar consulta de reservas
@@ -114,6 +115,7 @@ Preparar criação de reserva
     Preparar consulta de reservas
     VAR    ${BOOKING_PAYLOAD}    ${None}    scope=TEST
     VAR    ${CREATED_BOOKING_ID}    ${None}    scope=TEST
+    VAR    ${UPDATED_BOOKING_PAYLOAD}    ${None}    scope=TEST
     Obter token para limpeza de reservas
 
 que possuo dados válidos para criar uma reserva
@@ -190,12 +192,62 @@ a resposta deve conter os dados da reserva cadastrada
     Should Contain    ${RESPONSE.headers}[Content-Type]    application/json
     Validar dados da reserva    ${RESPONSE.json()}
 
+dados válidos para atualizar todos os campos da reserva
+    ${suffix}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    ${dates}=    Create Dictionary    checkin=2026-12-15    checkout=2026-12-18
+    ${payload}=    Create Dictionary
+    ...    firstname=Atualizada${suffix}
+    ...    lastname=Novo${suffix}
+    ...    totalprice=${275}
+    ...    depositpaid=${False}
+    ...    bookingdates=${dates}
+    ...    additionalneeds=Dinner
+    VAR    ${UPDATED_BOOKING_PAYLOAD}    ${payload}    scope=TEST
+
+eu atualizar a reserva com autenticação válida
+    Enviar atualização completa da reserva    ${CLEANUP_TOKEN}
+
+eu atualizar a reserva sem autenticação
+    Enviar atualização completa da reserva
+
+eu atualizar a reserva com um token inválido
+    ${invalid_token}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    Enviar atualização completa da reserva    invalido${invalid_token}
+
+Enviar atualização completa da reserva
+    [Arguments]    ${token}=${None}
+    Should Not Be Equal    ${UPDATED_BOOKING_PAYLOAD}    ${None}    Prepare os dados da atualização.
+    # Sessão exclusiva para garantir que o caso sem autenticação não herde cookies.
+    Create Session    booker_update    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}
+    ${headers}=    Create Dictionary    Accept=application/json
+    ${cookies}=    Create Dictionary
+    IF    $token is not None
+        Set To Dictionary    ${cookies}    token=${token}
+    END
+    ${response}=    PUT On Session    booker_update    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    json=${UPDATED_BOOKING_PAYLOAD}    headers=${headers}    cookies=${cookies}    expected_status=any
+    VAR    ${RESPONSE}    ${response}    scope=TEST
+
+a resposta deve conter os dados atualizados da reserva
+    Should Contain    ${RESPONSE.headers}[Content-Type]    application/json
+    Validar dados da reserva    ${RESPONSE.json()}    ${UPDATED_BOOKING_PAYLOAD}
+
+a reserva deve persistir os dados atualizados no mesmo ID
+    ${headers}=    Create Dictionary    Accept=application/json
+    ${response}=    GET On Session    booker    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    headers=${headers}    expected_status=200
+    Should Contain    ${response.headers}[Content-Type]    application/json
+    Validar dados da reserva    ${response.json()}    ${UPDATED_BOOKING_PAYLOAD}
+
+a reserva deve manter os dados originais
+    a reserva deve estar disponível para consulta com os dados enviados
+
 Validar dados da reserva
-    [Arguments]    ${booking}
+    [Arguments]    ${booking}    ${expected_payload}=${BOOKING_PAYLOAD}
     ${valid_types}=    Evaluate
     ...    isinstance($booking, dict) and isinstance($booking.get('firstname'), str) and isinstance($booking.get('lastname'), str) and type($booking.get('totalprice')) is int and type($booking.get('depositpaid')) is bool and isinstance($booking.get('bookingdates'), dict) and isinstance($booking.get('additionalneeds'), str)
     Should Be True    ${valid_types}    Os campos da reserva devem possuir os tipos esperados.
-    Dictionaries Should Be Equal    ${booking}    ${BOOKING_PAYLOAD}
+    Dictionaries Should Be Equal    ${booking}    ${expected_payload}
 
 Limpar reservas da consulta
     Limpar reservas do teste
