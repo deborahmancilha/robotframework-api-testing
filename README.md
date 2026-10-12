@@ -10,7 +10,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 
-> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta, criação e atualização completa e parcial de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
+> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta, criação, atualização completa e parcial e exclusão de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
 
 ## O que este projeto demonstra
 
@@ -57,6 +57,10 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 | **CT17 - API deve atualizar somente o depósito da reserva para não pago** | `PATCH /booking/{id}` | HTTP 200, depósito false, demais campos preservados e persistência |
 | **CT18 - API deve rejeitar a atualização parcial sem autenticação** | `PATCH /booking/{id}` | HTTP 403 e dados originais preservados |
 | **CT19 - API deve rejeitar a atualização parcial com token inválido** | `PATCH /booking/{id}` | HTTP 403 e dados originais preservados |
+| **CT20 - API deve excluir uma reserva com autenticação válida** | `DELETE /booking/{id}` | HTTP 201 e GET posterior com HTTP 404 |
+| **CT21 - API deve rejeitar a exclusão de uma reserva sem autenticação** | `DELETE /booking/{id}` | HTTP 403 e reserva intacta |
+| **CT22 - API deve rejeitar a exclusão de uma reserva com token inválido** | `DELETE /booking/{id}` | HTTP 403 e reserva intacta |
+| **CT23 - API deve rejeitar uma nova exclusão de uma reserva já excluída** | `DELETE /booking/{id}` | HTTP 405 e GET posterior com HTTP 404 |
 
 O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
 
@@ -145,6 +149,7 @@ Projeto_outubro/
 ├── tests/
 │   ├── create_booking.robot
 │   ├── create_token.robot
+│   ├── delete_booking.robot
 │   ├── get_booking.robot
 │   ├── get_booking_ids.robot
 │   ├── health_check.robot
@@ -171,7 +176,7 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | CreateBooking | `tests/create_booking.robot` | Implementado |
 | UpdateBooking | `tests/update_booking.robot` | Implementado |
 | PartialUpdateBooking | `tests/partial_update_booking.robot` | Implementado |
-| DeleteBooking | `tests/delete_booking.robot` | Planejado |
+| DeleteBooking | `tests/delete_booking.robot` | Implementado |
 
 Os arquivos planejados serão criados quando a automação da operação começar. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`.
 
@@ -211,7 +216,15 @@ Para executar somente a operação PartialUpdateBooking:
 .\.venv\Scripts\python.exe -m robot --outputdir results tests/partial_update_booking.robot
 ```
 
-Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking → UpdateBooking → PartialUpdateBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
+DeleteBooking utiliza reservas próprias e uma sessão exclusiva para excluir por `DELETE /booking/{id}`. O sucesso é HTTP 201, conforme a [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-DeleteBooking), e a consulta posterior deve retornar 404. Sem autenticação ou com token inválido, verificamos status 403 e a preservação dos dados. Uma segunda exclusão autenticada do mesmo ID retorna 405 na [implementação desta API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js); esse status é específico do serviço, não uma regra geral para APIs REST. Quando o DELETE retorna 201, o ID sai da lista de limpeza para evitar outra exclusão no teardown. Basic Auth ainda não está coberto.
+
+Para executar somente a operação DeleteBooking:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests/delete_booking.robot
+```
+
+Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking → UpdateBooking → PartialUpdateBooking → DeleteBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
 
 ## Escrita dos cenários em BDD
 

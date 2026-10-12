@@ -286,6 +286,34 @@ Enviar atualização parcial da reserva
 a resposta deve refletir a alteração parcial e preservar os demais campos
     a resposta deve conter os dados atualizados da reserva
 
+eu excluir a reserva com autenticação válida
+    Enviar exclusão da reserva    ${CLEANUP_TOKEN}
+
+eu excluir a reserva sem autenticação
+    Enviar exclusão da reserva
+
+eu excluir a reserva com um token inválido
+    ${invalid_token}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    Enviar exclusão da reserva    invalido${invalid_token}
+
+Enviar exclusão da reserva
+    [Arguments]    ${token}=${None}
+    Should Not Be Equal    ${CREATED_BOOKING_ID}    ${None}    Prepare uma reserva antes de excluí-la.
+    Create Session    booker_delete    ${BASE_URL}    verify=${True}    timeout=${TIMEOUT}
+    ${cookies}=    Create Dictionary
+    IF    $token is not None
+        Set To Dictionary    ${cookies}    token=${token}
+    END
+    ${response}=    DELETE On Session    booker_delete    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    cookies=${cookies}    expected_status=any
+    VAR    ${RESPONSE}    ${response}    scope=TEST
+    IF    ${response.status_code} == 201
+        Remove Values From List    ${CREATED_BOOKING_IDS}    ${CREATED_BOOKING_ID}
+    END
+
+a reserva excluída não deve estar disponível para consulta
+    GET On Session    booker    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}    expected_status=404
+
 Validar dados da reserva
     [Arguments]    ${booking}    ${expected_payload}=${BOOKING_PAYLOAD}
     ${valid_types}=    Evaluate
