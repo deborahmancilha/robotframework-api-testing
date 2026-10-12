@@ -11,6 +11,8 @@ ${BOOKING_MISSING_NAME}    ${None}
 @{CREATED_BOOKING_IDS}
 @{EXPECTED_BOOKING_IDS}
 ${CLEANUP_TOKEN}    ${None}
+${BOOKING_PAYLOAD}    ${None}
+${CREATED_BOOKING_ID}    ${None}
 
 *** Keywords ***
 Preparar consulta de reservas
@@ -25,15 +27,18 @@ que possuo reservas próprias para consultar
     VAR    ${BOOKING_LASTNAME}    Titular${suffix}    scope=TEST
     VAR    ${BOOKING_OTHER_LASTNAME}    Outro${suffix}    scope=TEST
     VAR    ${BOOKING_MISSING_NAME}    Ausente${suffix}    scope=TEST
+    Obter token para limpeza de reservas
+    Criar reserva para consulta    ${BOOKING_LASTNAME}
+    Criar reserva para consulta    ${BOOKING_OTHER_LASTNAME}
+    Criar reserva para consulta    ${BOOKING_LASTNAME}    Outro${suffix}
+
+Obter token para limpeza de reservas
     ${credentials}=    Create Dictionary    username=${AUTH_USERNAME}    password=${AUTH_PASSWORD}
     ${auth_response}=    POST On Session    booker    /auth    json=${credentials}    expected_status=200
     ${auth_body}=    Set Variable    ${auth_response.json()}
     Dictionary Should Contain Key    ${auth_body}    token
     Should Not Be Empty    ${auth_body}[token]
     VAR    ${CLEANUP_TOKEN}    ${auth_body}[token]    scope=TEST
-    Criar reserva para consulta    ${BOOKING_LASTNAME}
-    Criar reserva para consulta    ${BOOKING_OTHER_LASTNAME}
-    Criar reserva para consulta    ${BOOKING_LASTNAME}    Outro${suffix}
 
 Criar reserva para consulta
     [Arguments]    ${lastname}    ${firstname}=${BOOKING_FIRSTNAME}
@@ -105,7 +110,97 @@ a resposta deve conter uma lista vazia
     ${ids}=    Obter IDs da resposta
     Should Be Empty    ${ids}    A busca sem correspondência deve retornar uma lista vazia.
 
+Preparar criação de reserva
+    Preparar consulta de reservas
+    VAR    ${BOOKING_PAYLOAD}    ${None}    scope=TEST
+    VAR    ${CREATED_BOOKING_ID}    ${None}    scope=TEST
+    Obter token para limpeza de reservas
+
+que possuo dados válidos para criar uma reserva
+    ${suffix}=    Evaluate    uuid.uuid4().hex    modules=uuid
+    ${dates}=    Create Dictionary    checkin=2026-11-10    checkout=2026-11-12
+    ${payload}=    Create Dictionary
+    ...    firstname=QA${suffix}
+    ...    lastname=Titular${suffix}
+    ...    totalprice=${150}
+    ...    depositpaid=${True}
+    ...    bookingdates=${dates}
+    ...    additionalneeds=Breakfast
+    VAR    ${BOOKING_PAYLOAD}    ${payload}    scope=TEST
+
+o depósito da reserva não foi pago
+    Set To Dictionary    ${BOOKING_PAYLOAD}    depositpaid=${False}
+
+os nomes da reserva contêm acentos e apóstrofo
+    Set To Dictionary    ${BOOKING_PAYLOAD}    firstname=Débora${BOOKING_PAYLOAD}[firstname]    lastname=D'Ávila
+
+eu enviar uma requisição para o endpoint de criação de reserva
+    Should Not Be Equal    ${BOOKING_PAYLOAD}    ${None}    Prepare os dados antes de criar a reserva.
+    ${headers}=    Create Dictionary    Accept=application/json
+    ${response}=    POST On Session    booker    ${BOOKING_ENDPOINT}
+    ...    json=${BOOKING_PAYLOAD}    headers=${headers}    expected_status=any
+    VAR    ${RESPONSE}    ${response}    scope=TEST
+    # Registra o ID antes das assertions para permitir a limpeza se uma validação falhar.
+    ${body}=    Set Variable    ${response.json()}
+    ${has_id}=    Evaluate    isinstance($body, dict) and type($body.get('bookingid')) is int
+    IF    ${has_id}
+        VAR    ${CREATED_BOOKING_ID}    ${body}[bookingid]    scope=TEST
+        Append To List    ${CREATED_BOOKING_IDS}    ${CREATED_BOOKING_ID}
+    END
+
+a resposta deve conter o ID e os dados da reserva criada
+    Should Contain    ${RESPONSE.headers}[Content-Type]    application/json
+    ${body}=    Set Variable    ${RESPONSE.json()}
+    ${is_dictionary}=    Evaluate    isinstance($body, dict)
+    Should Be True    ${is_dictionary}    A resposta deve ser um objeto JSON.
+    Dictionary Should Contain Key    ${body}    bookingid
+    ${is_integer}=    Evaluate    type($body['bookingid']) is int
+    Should Be True    ${is_integer}    bookingid deve ser inteiro.
+    Dictionary Should Contain Key    ${body}    booking
+    Validar dados da reserva    ${body}[booking]
+
+a reserva deve estar disponível para consulta com os dados enviados
+    Should Not Be Equal    ${CREATED_BOOKING_ID}    ${None}    A criação deve retornar um ID para consulta.
+    ${headers}=    Create Dictionary    Accept=application/json
+    ${response}=    GET On Session    booker    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    headers=${headers}    expected_status=200
+    Should Contain    ${response.headers}[Content-Type]    application/json
+    Validar dados da reserva    ${response.json()}
+
+que possuo uma reserva própria cadastrada
+    que possuo dados válidos para criar uma reserva
+    eu enviar uma requisição para o endpoint de criação de reserva
+    a API deve retornar o status    200
+    a resposta deve conter o ID e os dados da reserva criada
+
+a reserva cadastrada foi excluída
+    ${cookies}=    Create Dictionary    token=${CLEANUP_TOKEN}
+    DELETE On Session    booker    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    cookies=${cookies}    expected_status=201
+    Remove Values From List    ${CREATED_BOOKING_IDS}    ${CREATED_BOOKING_ID}
+
+eu consultar a reserva pelo ID
+    Should Not Be Equal    ${CREATED_BOOKING_ID}    ${None}    Prepare uma reserva antes de consultar seu ID.
+    ${headers}=    Create Dictionary    Accept=application/json
+    ${response}=    GET On Session    booker    ${BOOKING_ENDPOINT}/${CREATED_BOOKING_ID}
+    ...    headers=${headers}    expected_status=any
+    VAR    ${RESPONSE}    ${response}    scope=TEST
+
+a resposta deve conter os dados da reserva cadastrada
+    Should Contain    ${RESPONSE.headers}[Content-Type]    application/json
+    Validar dados da reserva    ${RESPONSE.json()}
+
+Validar dados da reserva
+    [Arguments]    ${booking}
+    ${valid_types}=    Evaluate
+    ...    isinstance($booking, dict) and isinstance($booking.get('firstname'), str) and isinstance($booking.get('lastname'), str) and type($booking.get('totalprice')) is int and type($booking.get('depositpaid')) is bool and isinstance($booking.get('bookingdates'), dict) and isinstance($booking.get('additionalneeds'), str)
+    Should Be True    ${valid_types}    Os campos da reserva devem possuir os tipos esperados.
+    Dictionaries Should Be Equal    ${booking}    ${BOOKING_PAYLOAD}
+
 Limpar reservas da consulta
+    Limpar reservas do teste
+
+Limpar reservas do teste
     TRY
         ${cookies}=    Create Dictionary    token=${CLEANUP_TOKEN}
         FOR    ${booking_id}    IN    @{CREATED_BOOKING_IDS}

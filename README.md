@@ -10,7 +10,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **Site base:** [https://restful-booker.herokuapp.com/](https://restful-booker.herokuapp.com/)
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 
-> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token e consulta de IDs de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
+> **Etapa atual:** base publicada no GitHub, com cenários de health check, criação de token, consulta de IDs e criação de reservas implementados. O workflow está configurado para executar a suíte e preservar os relatórios.
 
 ## O que este projeto demonstra
 
@@ -45,6 +45,11 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 | **CT05 - API deve filtrar os IDs das reservas pelo sobrenome** | `GET /booking?lastname=...` | HTTP 200 e somente os dois IDs esperados |
 | **CT06 - API deve filtrar os IDs das reservas pelo nome e sobrenome** | `GET /booking?firstname=...&lastname=...` | HTTP 200 e somente o ID que combina ambos os campos |
 | **CT07 - API deve retornar uma lista vazia para um nome sem correspondência** | `GET /booking?firstname=...` | HTTP 200 e lista JSON vazia |
+| **CT08 - API deve consultar uma reserva existente pelo ID** | `GET /booking/{id}` | HTTP 200, JSON e dados iguais aos cadastrados |
+| **CT09 - API deve retornar não encontrado para uma reserva excluída** | `GET /booking/{id}` | HTTP 404 após excluir a reserva própria |
+| **CT10 - API deve criar uma reserva com dados válidos** | `POST /booking` | HTTP 200, ID inteiro, dados retornados e persistidos iguais aos enviados |
+| **CT11 - API deve criar uma reserva com depósito não pago** | `POST /booking` | Preservação de `depositpaid=false` na criação e consulta |
+| **CT12 - API deve preservar acentos e apóstrofo nos nomes da reserva** | `POST /booking` | Preservação dos nomes na criação e consulta |
 
 O cenário CreateToken usa as credenciais públicas de demonstração presentes na API Docs: `admin` e `password123`. O corpo é enviado em JSON com `username` e `password`; a RequestsLibrary define o `Content-Type` ao utilizar o argumento `json`. O teste verifica a criação do token; seu uso em operações protegidas será validado nos cenários dessas operações.
 
@@ -53,6 +58,12 @@ GetBookingIds utiliza o contrato da [API Docs — GetBookingIds](https://restful
 Os cenários com filtros criam três reservas com nomes únicos gerados por UUID: duas compartilham o primeiro nome e duas compartilham o sobrenome. A combinação de nome e sobrenome identifica somente uma delas, permitindo detectar filtros ignorados. Cada caso mantém seus próprios IDs e token de limpeza; no teardown, exclui apenas suas reservas, tenta limpar as demais mesmo se uma exclusão falhar e encerra as sessões. Falhas na limpeza reprovam o caso. A criação e a exclusão são preparação e limpeza dos testes de consulta, não suítes completas dessas operações.
 
 A API é pública e compartilhada; reinicializações ou alterações por terceiros durante um caso podem causar falhas. Filtros por `checkin` e `checkout`, também documentados, permanecem pendentes. Busca sem correspondência é um cenário válido com resultado vazio; não se presume erro HTTP para esse caso.
+
+GetBooking consulta uma reserva própria pelo ID e compara o objeto JSON com os dados cadastrados. O cenário negativo exclui sua própria reserva antes da consulta, evitando presumir que um ID fixo não existe. O status 404 é comportamento da [implementação da API](https://github.com/mwinteringham/restful-booker/blob/master/routes/index.js), verificado na execução; a API Docs de GetBooking descreve o retorno de sucesso. A reserva excluída é removida da lista de limpeza para não tentar excluí-la novamente.
+
+CreateBooking segue o [contrato documentado](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-CreateBooking): envia `firstname`, `lastname`, `totalprice`, `depositpaid`, `bookingdates` e `additionalneeds` em JSON, solicitando retorno JSON pelo header `Accept`. O sucesso esperado é HTTP 200, com `bookingid` e `booking`. Os CT10–CT12 são cenários positivos; as variações de booleano e caracteres são escolhas de cobertura do projeto. Cada caso utiliza um nome único, compara os campos retornados com o payload e consulta `GET /booking/{id}` para verificar persistência. O POST não recebe token; a autenticação serve à limpeza por DELETE.
+
+O ID é registrado antes das assertions de conteúdo para permitir exclusão mesmo quando uma validação posterior falha. Se a API criar a reserva sem retornar um ID utilizável, a limpeza por ID não poderá identificá-la. Campos ausentes, tipos inválidos, regras de datas e outros formatos de requisição ainda não estão cobertos; os códigos de erro não são presumidos, pois a API Docs de CreateBooking descreve somente a resposta de sucesso.
 
 ## Executar no Windows
 
@@ -125,7 +136,9 @@ Projeto_outubro/
 │   ├── common.resource
 │   └── health.resource
 ├── tests/
+│   ├── create_booking.robot
 │   ├── create_token.robot
+│   ├── get_booking.robot
 │   ├── get_booking_ids.robot
 │   └── health_check.robot
 ├── results/
@@ -145,8 +158,8 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 | HealthCheck | `tests/health_check.robot` | Implementado |
 | CreateToken | `tests/create_token.robot` | Implementado |
 | GetBookingIds | `tests/get_booking_ids.robot` | Implementado |
-| GetBooking | `tests/get_booking.robot` | Planejado |
-| CreateBooking | `tests/create_booking.robot` | Planejado |
+| GetBooking | `tests/get_booking.robot` | Implementado |
+| CreateBooking | `tests/create_booking.robot` | Implementado |
 | UpdateBooking | `tests/update_booking.robot` | Planejado |
 | PartialUpdateBooking | `tests/partial_update_booking.robot` | Planejado |
 | DeleteBooking | `tests/delete_booking.robot` | Planejado |
@@ -160,6 +173,20 @@ Para executar somente a operação GetBookingIds:
 ```powershell
 .\.venv\Scripts\python.exe -m robot --outputdir results tests/get_booking_ids.robot
 ```
+
+Para executar somente a operação CreateBooking:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests/create_booking.robot
+```
+
+Para executar somente a operação GetBooking:
+
+```powershell
+.\.venv\Scripts\python.exe -m robot --outputdir results tests/get_booking.robot
+```
+
+Os CTs seguem a ordem lógica HealthCheck → CreateToken → GetBookingIds → GetBooking → CreateBooking. A descoberta padrão do Robot Framework segue os nomes dos arquivos; a numeração não impõe ordem de execução. Cada caso prepara seus próprios dados e pode ser executado independentemente.
 
 ## Escrita dos cenários em BDD
 
