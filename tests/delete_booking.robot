@@ -7,7 +7,7 @@ Test Setup          Preparar criação de reserva
 Test Teardown       Limpar reservas do teste
 
 *** Test Cases ***
-CT55 - API deve excluir uma reserva com autenticação válida
+CT63 - API deve excluir uma reserva com autenticação válida
     [Documentation]    Valida status 201 e confirma a exclusão com GET retornando 404.
     [Tags]    smoke    booking    delete_booking
 
@@ -16,7 +16,7 @@ CT55 - API deve excluir uma reserva com autenticação válida
     Então a API deve retornar o status    201
     E a reserva excluída não deve estar disponível para consulta
 
-CT56 - API deve rejeitar a exclusão de uma reserva sem autenticação
+CT64 - API deve rejeitar a exclusão de uma reserva sem autenticação
     [Documentation]    Valida status 403 e confirma que a reserva permanece existente e intacta.
     [Tags]    booking    delete_booking    negative
 
@@ -25,7 +25,7 @@ CT56 - API deve rejeitar a exclusão de uma reserva sem autenticação
     Então a API deve retornar o status    403
     E a reserva deve manter os dados originais
 
-CT57 - API deve rejeitar a exclusão de uma reserva com token inválido
+CT65 - API deve rejeitar a exclusão de uma reserva com token inválido
     [Documentation]    Valida status 403 e confirma que a reserva permanece existente e intacta.
     [Tags]    booking    delete_booking    negative
 
@@ -34,7 +34,7 @@ CT57 - API deve rejeitar a exclusão de uma reserva com token inválido
     Então a API deve retornar o status    403
     E a reserva deve manter os dados originais
 
-CT58 - API deve rejeitar uma nova exclusão de uma reserva já excluída
+CT66 - API deve rejeitar uma nova exclusão de uma reserva já excluída
     [Documentation]    Valida status 405 para DELETE autenticado em ID próprio já excluído.
     [Tags]    booking    delete_booking    negative
 
@@ -44,7 +44,7 @@ CT58 - API deve rejeitar uma nova exclusão de uma reserva já excluída
     Então a API deve retornar o status    405
     E a reserva excluída não deve estar disponível para consulta
 
-CT59 - API deve excluir uma reserva com Basic Auth válida
+CT67 - API deve excluir uma reserva com Basic Auth válida
     [Documentation]    Valida Basic Auth sem cookie de token.
     [Tags]    booking    delete_booking    basic_auth
 
@@ -53,7 +53,7 @@ CT59 - API deve excluir uma reserva com Basic Auth válida
     Então a API deve retornar o status    201
     E a reserva excluída não deve estar disponível para consulta
 
-CT60 - API deve rejeitar a exclusão de uma reserva com Basic Auth inválida
+CT68 - API deve rejeitar a exclusão de uma reserva com Basic Auth inválida
     [Documentation]    Valida HTTP 403 e dados preservados sem cookie de token.
     [Tags]    booking    delete_booking    basic_auth    negative
 

@@ -402,9 +402,13 @@ as datas da reserva representam o mesmo dia
     Set To Dictionary    ${BOOKING_PAYLOAD}    bookingdates=${dates}
 
 a API deve rejeitar os dados inválidos da reserva
-    ${rejected}=    Evaluate    $RESPONSE.status_code in (400, 422, 500)
+    # Critério de contrato adotado pelo projeto; a API Docs não especifica o código de validação.
+    ${rejected}=    Evaluate    $RESPONSE.status_code in (400, 422)
     Run Keyword And Continue On Failure    Should Be True    ${rejected}
-    ...    Esperada rejeição de entrada inválida (400/422 ou o 500 usado por esta API), recebido HTTP ${RESPONSE.status_code}.
+    ...    Esperado erro controlado de validação (400/422, critério do projeto), recebido HTTP ${RESPONSE.status_code}. HTTP 500 não comprova validação correta.
+
+a API deve apresentar o erro interno observado na criação
+    a API deve retornar o status    500
 
 a criação rejeitada não deve retornar um ID de reserva
     Should Be Equal    ${CREATED_BOOKING_ID}    ${None}    A requisição inválida criou uma reserva.

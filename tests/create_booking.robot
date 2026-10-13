@@ -1,7 +1,7 @@
 Language: pt
 
 *** Settings ***
-Documentation       Cenários positivos, negativos e limites da operação CreateBooking em JSON.
+Documentation       Cenários positivos, de contrato e de caracterização da operação CreateBooking em JSON.
 Resource            ../resources/booking.resource
 Test Setup          Preparar criação de reserva
 Test Teardown       Limpar reservas do teste
@@ -40,8 +40,8 @@ CT20 - API deve preservar acentos e apóstrofo nos nomes da reserva
     E a reserva deve estar disponível para consulta com os dados enviados
 
 CT21 - API deve rejeitar criação sem o campo obrigatório firstname
-    [Documentation]    Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida.
-    [Tags]    booking    create_booking    negative    required
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    required    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    firstname
@@ -50,8 +50,8 @@ CT21 - API deve rejeitar criação sem o campo obrigatório firstname
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT22 - API deve rejeitar criação sem o campo obrigatório lastname
-    [Documentation]    Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida.
-    [Tags]    booking    create_booking    negative    required
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    required    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    lastname
@@ -60,8 +60,8 @@ CT22 - API deve rejeitar criação sem o campo obrigatório lastname
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT23 - API deve rejeitar criação sem o campo obrigatório totalprice
-    [Documentation]    Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida.
-    [Tags]    booking    create_booking    negative    required
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    required    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    totalprice
@@ -70,8 +70,8 @@ CT23 - API deve rejeitar criação sem o campo obrigatório totalprice
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT24 - API deve rejeitar criação sem o campo obrigatório depositpaid
-    [Documentation]    Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida.
-    [Tags]    booking    create_booking    negative    required
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    required    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    depositpaid
@@ -80,8 +80,8 @@ CT24 - API deve rejeitar criação sem o campo obrigatório depositpaid
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT25 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkin
-    [Documentation]    Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida.
-    [Tags]    booking    create_booking    negative    required
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    required    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    bookingdates.checkin
@@ -90,8 +90,8 @@ CT25 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkin
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT26 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkout
-    [Documentation]    Verifica a rejeição sem ID; um status 5xx não representa tratamento adequado de entrada inválida.
-    [Tags]    booking    create_booking    negative    required
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    required    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    bookingdates.checkout
@@ -100,8 +100,8 @@ CT26 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkou
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT27 - API deve rejeitar criação com primeiro nome numérico
-    [Documentation]    Verifica rejeição de tipo incompatível com o contrato da API.
-    [Tags]    booking    create_booking    negative    contract
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo da reserva possui valor inválido    firstname    ${123}
@@ -110,7 +110,7 @@ CT27 - API deve rejeitar criação com primeiro nome numérico
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT28 - API deve rejeitar criação com preço não numérico
-    [Documentation]    Verifica rejeição de tipo incompatível com o contrato da API.
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
     [Tags]    booking    create_booking    negative    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
@@ -120,7 +120,7 @@ CT28 - API deve rejeitar criação com preço não numérico
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT29 - API deve rejeitar criação com depósito como texto
-    [Documentation]    Verifica rejeição de tipo incompatível com o contrato da API.
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
     [Tags]    booking    create_booking    negative    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
@@ -130,8 +130,8 @@ CT29 - API deve rejeitar criação com depósito como texto
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT30 - API deve rejeitar criação com datas como texto
-    [Documentation]    Verifica rejeição de tipo incompatível com o contrato da API.
-    [Tags]    booking    create_booking    negative    contract
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
+    [Tags]    booking    create_booking    negative    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo da reserva possui valor inválido    bookingdates    datas_invalidas
@@ -140,7 +140,7 @@ CT30 - API deve rejeitar criação com datas como texto
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT31 - API deve rejeitar criação com nomes vazios
-    [Documentation]    Verifica entrada inválida; datas invertidas representam uma expectativa de domínio adotada pelo projeto.
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
     [Tags]    booking    create_booking    negative    boundary    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
@@ -150,7 +150,7 @@ CT31 - API deve rejeitar criação com nomes vazios
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT32 - API deve rejeitar criação com nomes com somente espaços
-    [Documentation]    Verifica entrada inválida; datas invertidas representam uma expectativa de domínio adotada pelo projeto.
+    [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
     [Tags]    booking    create_booking    negative    boundary    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
@@ -160,7 +160,7 @@ CT32 - API deve rejeitar criação com nomes com somente espaços
     E a criação rejeitada não deve retornar um ID de reserva
 
 CT33 - API deve rejeitar criação com datas invertidas
-    [Documentation]    Verifica entrada inválida; datas invertidas representam uma expectativa de domínio adotada pelo projeto.
+    [Documentation]    Hipótese de domínio: datas invertidas devem produzir erro controlado 400/422 sem criar reserva; a regra exige alinhamento de requisitos.
     [Tags]    booking    create_booking    negative    boundary    contract    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
@@ -201,3 +201,83 @@ CT36 - API deve criar uma reserva com entrada e saída no mesmo dia
     Então a API deve retornar o status    200
     E a resposta deve conter o ID e os dados da reserva criada
     E a reserva deve estar disponível para consulta com os dados enviados
+
+CT37 - Caracterização - Criação sem firstname retorna HTTP 500
+    [Documentation]    Registra o erro interno observado, sem criação de reserva; não comprova tratamento correto de validação.
+    [Tags]    booking    create_booking    characterization    negative    required
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo obrigatório da reserva foi omitido    firstname
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT38 - Caracterização - Criação sem lastname retorna HTTP 500
+    [Documentation]    Registra o erro interno observado, sem criação de reserva; não comprova tratamento correto de validação.
+    [Tags]    booking    create_booking    characterization    negative    required
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo obrigatório da reserva foi omitido    lastname
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT39 - Caracterização - Criação sem totalprice retorna HTTP 500
+    [Documentation]    Registra o erro interno observado, sem criação de reserva; não comprova tratamento correto de validação.
+    [Tags]    booking    create_booking    characterization    negative    required
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo obrigatório da reserva foi omitido    totalprice
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT40 - Caracterização - Criação sem depositpaid retorna HTTP 500
+    [Documentation]    Registra o erro interno observado, sem criação de reserva; não comprova tratamento correto de validação.
+    [Tags]    booking    create_booking    characterization    negative    required
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo obrigatório da reserva foi omitido    depositpaid
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT41 - Caracterização - Criação sem bookingdates.checkin retorna HTTP 500
+    [Documentation]    Registra o erro interno observado, sem criação de reserva; não comprova tratamento correto de validação.
+    [Tags]    booking    create_booking    characterization    negative    required
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo obrigatório da reserva foi omitido    bookingdates.checkin
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT42 - Caracterização - Criação sem bookingdates.checkout retorna HTTP 500
+    [Documentation]    Registra o erro interno observado, sem criação de reserva; não comprova tratamento correto de validação.
+    [Tags]    booking    create_booking    characterization    negative    required
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo obrigatório da reserva foi omitido    bookingdates.checkout
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT43 - Caracterização - Criação com firstname numérico retorna HTTP 500
+    [Documentation]    Registra o erro interno observado para firstname numérico, sem criação de reserva; não comprova validação correta.
+    [Tags]    booking    create_booking    characterization    negative
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo da reserva possui valor inválido    firstname    ${123}
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
+
+CT44 - Caracterização - Criação com bookingdates como texto retorna HTTP 500
+    [Documentation]    Registra o erro interno observado para bookingdates como texto, sem criação de reserva; não comprova validação correta.
+    [Tags]    booking    create_booking    characterization    negative
+
+    Dado que possuo dados válidos para criar uma reserva
+    E o campo da reserva possui valor inválido    bookingdates    datas_invalidas
+    Quando eu enviar uma requisição para o endpoint de criação de reserva
+    Então a API deve apresentar o erro interno observado na criação
+    E a criação rejeitada não deve retornar um ID de reserva
