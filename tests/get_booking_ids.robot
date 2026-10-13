@@ -53,8 +53,8 @@ CT11 - API deve retornar uma lista vazia para um nome sem correspondência
     E a resposta deve conter uma lista vazia
 
 CT12 - API deve filtrar reservas posteriores ao limite de checkin
-    [Documentation]    Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
-    [Tags]    booking    get_booking_ids    filter    boundary    contract
+    [Documentation]    Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
+    [Tags]    booking    get_booking_ids    filter    boundary    functional    specification
 
     Dado que possuo reservas próprias antes, no limite e depois da data de filtro    checkin
     Quando eu consultar os IDs por data posterior ao limite
@@ -62,8 +62,8 @@ CT12 - API deve filtrar reservas posteriores ao limite de checkin
     E a resposta deve incluir as reservas posteriores e excluir as anteriores ao limite
 
 CT13 - API deve incluir reservas no limite do filtro checkin
-    [Documentation]    Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
-    [Tags]    booking    get_booking_ids    filter    boundary    contract    known_bug
+    [Documentation]    Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
+    [Tags]    booking    get_booking_ids    filter    boundary    functional    specification    known_bug
 
     Dado que possuo reservas próprias antes, no limite e depois da data de filtro    checkin
     Quando eu consultar os IDs por data posterior ao limite
@@ -71,8 +71,8 @@ CT13 - API deve incluir reservas no limite do filtro checkin
     E a resposta deve incluir a reserva exatamente na data limite
 
 CT14 - API deve filtrar reservas posteriores ao limite de checkout
-    [Documentation]    Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
-    [Tags]    booking    get_booking_ids    filter    boundary    contract    known_bug
+    [Documentation]    Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
+    [Tags]    booking    get_booking_ids    filter    boundary    functional    specification    known_bug
 
     Dado que possuo reservas próprias antes, no limite e depois da data de filtro    checkout
     Quando eu consultar os IDs por data posterior ao limite
@@ -80,8 +80,8 @@ CT14 - API deve filtrar reservas posteriores ao limite de checkout
     E a resposta deve incluir as reservas posteriores e excluir as anteriores ao limite
 
 CT15 - API deve incluir reservas no limite do filtro checkout
-    [Documentation]    Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
-    [Tags]    booking    get_booking_ids    filter    boundary    contract
+    [Documentation]    Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID.
+    [Tags]    booking    get_booking_ids    filter    boundary    functional    specification
 
     Dado que possuo reservas próprias antes, no limite e depois da data de filtro    checkout
     Quando eu consultar os IDs por data posterior ao limite

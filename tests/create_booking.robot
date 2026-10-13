@@ -1,7 +1,7 @@
 Language: pt
 
 *** Settings ***
-Documentation       Cenários positivos, de contrato e de caracterização da operação CreateBooking em JSON.
+Documentation       Cenários funcionais positivos, negativos e de caracterização da operação CreateBooking em JSON.
 Resource            ../resources/booking.resource
 Test Setup          Preparar criação de reserva
 Test Teardown       Limpar reservas do teste
@@ -41,7 +41,7 @@ CT20 - API deve preservar acentos e apóstrofo nos nomes da reserva
 
 CT21 - API deve rejeitar criação sem o campo obrigatório firstname
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    required    contract    known_bug
+    [Tags]    booking    create_booking    negative    required    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    firstname
@@ -51,7 +51,7 @@ CT21 - API deve rejeitar criação sem o campo obrigatório firstname
 
 CT22 - API deve rejeitar criação sem o campo obrigatório lastname
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    required    contract    known_bug
+    [Tags]    booking    create_booking    negative    required    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    lastname
@@ -61,7 +61,7 @@ CT22 - API deve rejeitar criação sem o campo obrigatório lastname
 
 CT23 - API deve rejeitar criação sem o campo obrigatório totalprice
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    required    contract    known_bug
+    [Tags]    booking    create_booking    negative    required    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    totalprice
@@ -71,7 +71,7 @@ CT23 - API deve rejeitar criação sem o campo obrigatório totalprice
 
 CT24 - API deve rejeitar criação sem o campo obrigatório depositpaid
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    required    contract    known_bug
+    [Tags]    booking    create_booking    negative    required    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    depositpaid
@@ -81,7 +81,7 @@ CT24 - API deve rejeitar criação sem o campo obrigatório depositpaid
 
 CT25 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkin
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    required    contract    known_bug
+    [Tags]    booking    create_booking    negative    required    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    bookingdates.checkin
@@ -91,7 +91,7 @@ CT25 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkin
 
 CT26 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkout
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    required    contract    known_bug
+    [Tags]    booking    create_booking    negative    required    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo obrigatório da reserva foi omitido    bookingdates.checkout
@@ -101,7 +101,7 @@ CT26 - API deve rejeitar criação sem o campo obrigatório bookingdates.checkou
 
 CT27 - API deve rejeitar criação com primeiro nome numérico
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    contract    known_bug
+    [Tags]    booking    create_booking    negative    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo da reserva possui valor inválido    firstname    ${123}
@@ -111,7 +111,7 @@ CT27 - API deve rejeitar criação com primeiro nome numérico
 
 CT28 - API deve rejeitar criação com preço não numérico
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    contract    known_bug
+    [Tags]    booking    create_booking    negative    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo da reserva possui valor inválido    totalprice    caro
@@ -121,7 +121,7 @@ CT28 - API deve rejeitar criação com preço não numérico
 
 CT29 - API deve rejeitar criação com depósito como texto
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    contract    known_bug
+    [Tags]    booking    create_booking    negative    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo da reserva possui valor inválido    depositpaid    false
@@ -131,7 +131,7 @@ CT29 - API deve rejeitar criação com depósito como texto
 
 CT30 - API deve rejeitar criação com datas como texto
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    contract    known_bug
+    [Tags]    booking    create_booking    negative    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E o campo da reserva possui valor inválido    bookingdates    datas_invalidas
@@ -141,7 +141,7 @@ CT30 - API deve rejeitar criação com datas como texto
 
 CT31 - API deve rejeitar criação com nomes vazios
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    boundary    contract    known_bug
+    [Tags]    booking    create_booking    negative    boundary    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E os nomes da reserva estão vazios
@@ -151,7 +151,7 @@ CT31 - API deve rejeitar criação com nomes vazios
 
 CT32 - API deve rejeitar criação com nomes com somente espaços
     [Documentation]    Critério do projeto: erro controlado 400/422 sem criar reserva; a API Docs não especifica o código de validação.
-    [Tags]    booking    create_booking    negative    boundary    contract    known_bug
+    [Tags]    booking    create_booking    negative    boundary    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E os nomes da reserva contêm somente espaços
@@ -161,7 +161,7 @@ CT32 - API deve rejeitar criação com nomes com somente espaços
 
 CT33 - API deve rejeitar criação com datas invertidas
     [Documentation]    Hipótese de domínio: datas invertidas devem produzir erro controlado 400/422 sem criar reserva; a regra exige alinhamento de requisitos.
-    [Tags]    booking    create_booking    negative    boundary    contract    known_bug
+    [Tags]    booking    create_booking    negative    boundary    functional    validation    known_bug
 
     Dado que possuo dados válidos para criar uma reserva
     E as datas da reserva estão em ordem invertida

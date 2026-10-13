@@ -51,7 +51,7 @@ CT56 - API deve rejeitar a atualização parcial com token inválido
 
 CT57 - API deve atualizar somente o preço da reserva
     [Documentation]    Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados.
-    [Tags]    booking    partial_update_booking    contract
+    [Tags]    booking    partial_update_booking    functional
 
     Dado que possuo uma reserva própria cadastrada
     E dados para atualizar somente o preço da reserva
@@ -62,7 +62,7 @@ CT57 - API deve atualizar somente o preço da reserva
 
 CT58 - API deve atualizar somente as necessidades adicionais da reserva
     [Documentation]    Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados.
-    [Tags]    booking    partial_update_booking    contract
+    [Tags]    booking    partial_update_booking    functional
 
     Dado que possuo uma reserva própria cadastrada
     E dados para atualizar somente as necessidades adicionais da reserva
@@ -73,7 +73,7 @@ CT58 - API deve atualizar somente as necessidades adicionais da reserva
 
 CT59 - API deve atualizar somente as datas da reserva
     [Documentation]    Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados.
-    [Tags]    booking    partial_update_booking    contract
+    [Tags]    booking    partial_update_booking    functional
 
     Dado que possuo uma reserva própria cadastrada
     E dados para atualizar somente as datas da reserva
@@ -84,7 +84,7 @@ CT59 - API deve atualizar somente as datas da reserva
 
 CT60 - API deve atualizar somente a data de entrada da reserva
     [Documentation]    Valida alteração parcial, persistência e preservação dos demais campos, incluindo campos aninhados.
-    [Tags]    booking    partial_update_booking    contract    known_bug
+    [Tags]    booking    partial_update_booking    functional    known_bug
 
     Dado que possuo uma reserva própria cadastrada
     E dados para atualizar somente a data de entrada da reserva

@@ -11,7 +11,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 - **Repositório:** [robotframework-api-testing](https://github.com/deborahmancilha/robotframework-api-testing)
 
-> **Etapa atual:** automação das oito operações documentadas, com testes positivos, negativos, limites e Basic Auth. Os **testes de contrato** verificam expectativas de validação; os **testes de caracterização** registram comportamentos observados, incluindo erros internos HTTP 500. A etapa mais recente organiza os recursos em camadas de dados, chamadas HTTP e validações, coordenadas pelas keywords BDD. O projeto está publicado no GitHub e utiliza GitHub Actions para executar a suíte e disponibilizar os relatórios como artefatos.
+> **Etapa atual:** automação das oito operações documentadas, com testes positivos, negativos, limites e Basic Auth. Os **testes funcionais de API** verificam as operações, a persistência e as expectativas de validação; os **testes de caracterização** registram comportamentos observados, incluindo erros internos HTTP 500. A etapa mais recente organiza os recursos em camadas de dados, chamadas HTTP e validações, coordenadas pelas keywords BDD. O projeto está publicado no GitHub e utiliza GitHub Actions para executar a suíte e disponibilizar os relatórios como artefatos.
 
 ## O que este projeto demonstra
 
@@ -37,7 +37,7 @@ As dependências diretas e transitivas estão fixadas em `requirements.txt`.
 
 ## Cobertura implementada
 
-As oito suítes possuem **68 casos de teste**, organizados por operação. A numeração segue a ordem lógica abaixo; os testes mantêm dados próprios e não dependem dessa ordem de execução. Oito casos novos registram explicitamente erros internos observados na criação, separados das expectativas de validação de contrato.
+As oito suítes possuem **68 casos de teste**, organizados por operação. A numeração segue a ordem lógica abaixo; os testes mantêm dados próprios e não dependem dessa ordem de execução. Oito casos novos registram explicitamente erros internos observados na criação, separados das expectativas dos testes funcionais negativos de validação.
 
 | Suíte | CTs | Quantidade |
 | --- | --- | --- |
@@ -63,10 +63,10 @@ As oito suítes possuem **68 casos de teste**, organizados por operação. A num
 | **CT09 - API deve filtrar os IDs das reservas pelo sobrenome** | `GET /booking` | Valida que o filtro lastname retorna as duas reservas próprias com o mesmo sobrenome. |
 | **CT10 - API deve filtrar os IDs das reservas pelo nome e sobrenome** | `GET /booking` | Valida que ambos os filtros são aplicados, excluindo reservas que combinam apenas um dos campos. |
 | **CT11 - API deve retornar uma lista vazia para um nome sem correspondência** | `GET /booking` | Valida uma busca válida sem resultados usando um nome único diferente das reservas criadas. |
-| **CT12 - API deve filtrar reservas posteriores ao limite de checkin** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
-| **CT13 - API deve incluir reservas no limite do filtro checkin** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
-| **CT14 - API deve filtrar reservas posteriores ao limite de checkout** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
-| **CT15 - API deve incluir reservas no limite do filtro checkout** | `GET /booking` | Verifica o contrato da API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT12 - API deve filtrar reservas posteriores ao limite de checkin** | `GET /booking` | Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT13 - API deve incluir reservas no limite do filtro checkin** | `GET /booking` | Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT14 - API deve filtrar reservas posteriores ao limite de checkout** | `GET /booking` | Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
+| **CT15 - API deve incluir reservas no limite do filtro checkout** | `GET /booking` | Verifica o comportamento descrito na API Docs: data maior ou igual ao filtro, isolando reservas com nome UUID. |
 | **CT16 - API deve consultar uma reserva existente pelo ID** | `GET /booking/{id}` | Valida status 200 e os dados completos de uma reserva própria consultada por ID. |
 | **CT17 - API deve retornar não encontrado para uma reserva excluída** | `GET /booking/{id}` | Valida status 404 ao consultar o ID de uma reserva própria previamente excluída. |
 | **CT18 - API deve criar uma reserva com dados válidos** | `POST /booking` | Valida status, ID, dados retornados e persistência de uma reserva completa. |
@@ -124,25 +124,25 @@ As oito suítes possuem **68 casos de teste**, organizados por operação. A num
 ### Critérios e dados de teste
 
 - **CreateToken:** usa as credenciais públicas `admin` e `password123`. Credenciais incorretas ou incompletas retornam HTTP 200 com `reason: Bad credentials`, conforme a implementação; os cenários negativos também verificam ausência de `token`.
-- **GetBookingIds:** filtros por nome, sobrenome, `checkin` e `checkout`. Os testes de data criam três reservas com datas antes, exatamente no limite e depois do filtro, isoladas por nome UUID. Os critérios de direção e igualdade seguem a API Docs, que descreve data maior ou igual ao filtro. Divergências entre documentação e serviço são falhas de contrato, não alterações das expectativas para aprovar a suíte.
+- **GetBookingIds:** filtros por nome, sobrenome, `checkin` e `checkout`. Os testes de data criam três reservas com datas antes, exatamente no limite e depois do filtro, isoladas por nome UUID. Os critérios de direção e igualdade seguem a API Docs, que descreve data maior ou igual ao filtro. Divergências entre documentação e serviço são falhas de conformidade com a especificação, não alterações das expectativas para aprovar a suíte.
 - **GetBooking:** consulta uma reserva própria e verifica HTTP 404 após sua exclusão.
 - **CreateBooking:** campos obrigatórios ausentes, tipos incompatíveis, nomes vazios/espaços e ordem das datas, além de cenários válidos com preço zero, preço inteiro elevado e estadia no mesmo dia. O valor `2147483647` é um ponto de referência de teste, não um máximo de negócio documentado. Rejeitar datas invertidas é uma expectativa de domínio adotada pelo projeto; os demais limites não documentados são descritos como caracterização do comportamento.
 - **UpdateBooking:** atualização completa, JSON malformado, campo obrigatório ausente e reserva inexistente, com verificação de persistência ou preservação dos dados originais.
 - **PartialUpdateBooking:** alterações de nomes, depósito, preço, necessidades adicionais e datas. Na alteração somente do check-in, o checkout deve ser preservado. O objeto esperado é uma cópia independente dos dados originais com somente as mudanças solicitadas.
 - **Basic Auth:** cenários válidos e inválidos em PUT, PATCH e DELETE, usando sessões exclusivas sem cookie de token. A preparação e a limpeza continuam utilizando token próprio.
 
-A documentação e a implementação de referência estão em [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html) e [código-fonte oficial](https://github.com/mwinteringham/restful-booker). O serviço utiliza códigos específicos: 201 para DELETE bem-sucedido, 403 para autenticação rejeitada e 405 para PUT/DELETE em ID inexistente. O POST de criação responde 500 em cenários de campos obrigatórios ausentes e alguns tipos inválidos. Os CT37–CT44 verificam exatamente esse comportamento, mas **não representam um tratamento adequado de entrada inválida**. Os testes de contrato exigem 400 ou 422 como critério adotado pelo projeto, pois a API Docs não especifica o retorno desses erros; HTTP 500 não é mais aceito nessa validação. Os testes de contrato não presumem que tipos inválidos ou datas invertidas sejam válidos porque o serviço os aceitou.
+A documentação e a implementação de referência estão em [API Docs](https://restful-booker.herokuapp.com/apidoc/index.html) e [código-fonte oficial](https://github.com/mwinteringham/restful-booker). O serviço utiliza códigos específicos: 201 para DELETE bem-sucedido, 403 para autenticação rejeitada e 405 para PUT/DELETE em ID inexistente. O POST de criação responde 500 em cenários de campos obrigatórios ausentes e alguns tipos inválidos. Os CT37–CT44 verificam exatamente esse comportamento, mas **não representam um tratamento adequado de entrada inválida**. Os testes funcionais negativos de validação exigem 400 ou 422 como critério adotado pelo projeto, pois a API Docs não especifica o retorno desses erros; HTTP 500 não é mais aceito nessa validação. Os testes funcionais negativos não presumem que tipos inválidos ou datas invertidas sejam válidos porque o serviço os aceitou.
 
-### Caracterização e contrato
+### Testes funcionais negativos e caracterização
 
 | Categoria | Pergunta respondida | Critério para entradas inválidas na criação |
 | --- | --- | --- |
 | `characterization` | A API mantém o comportamento observado? | HTTP 500 exato e nenhuma reserva criada |
-| `contract` | A API atende à expectativa de validação do projeto? | HTTP 400 ou 422 e nenhuma reserva criada; HTTP 500 reprova |
+| `functional` + `negative` + `validation` | A API atende à expectativa de validação do projeto? | HTTP 400 ou 422 e nenhuma reserva criada; HTTP 500 reprova |
 
-A expectativa de 400/422 é uma decisão explícita deste projeto, não uma garantia da API Docs. Não se fixa arbitrariamente um único código não documentado. O mesmo dado de entrada pode aparecer em ambas as categorias porque as verificações têm objetivos diferentes. Aprovar uma caracterização confirma o comportamento atual, inclusive inadequado; não comprova que o serviço trata o erro corretamente. Se o servidor passar a responder 400/422, a caracterização falhará sinalizando uma mudança que deve ser investigada, enquanto o contrato poderá passar. `booking.resource` coordena os casos e sua limpeza, utilizando as chamadas de `booking_api.resource` e as assertions de `booking_validations.resource`.
+A expectativa de 400/422 é uma decisão explícita deste projeto, não uma garantia da API Docs. Não se fixa arbitrariamente um único código não documentado. O mesmo dado de entrada pode aparecer em ambas as categorias porque as verificações têm objetivos diferentes. Aprovar uma caracterização confirma o comportamento atual, inclusive inadequado; não comprova que o serviço trata o erro corretamente. Se o servidor passar a responder 400/422, a caracterização falhará sinalizando uma mudança que deve ser investigada, enquanto o teste funcional negativo correspondente poderá passar. `booking.resource` coordena os casos e sua limpeza, utilizando as chamadas de `booking_api.resource` e as assertions de `booking_validations.resource`.
 
-| Entrada | CT de contrato | CT de caracterização |
+| Entrada | CT funcional negativo | CT de caracterização |
 | --- | --- | --- |
 | Sem `firstname` | CT21 | CT37 |
 | Sem `lastname` | CT22 | CT38 |
@@ -159,13 +159,26 @@ Para executar somente as oito caracterizações de erro interno:
 .\.venv\Scripts\python.exe -m robot --include characterization --outputdir results/characterization tests/create_booking.robot
 ```
 
-Para executar somente as expectativas de contrato da criação:
+Para executar somente os testes funcionais negativos de validação da criação (CT21–CT33):
 
 ```powershell
-.\.venv\Scripts\python.exe -m robot --include contract --outputdir results/contract tests/create_booking.robot
+.\.venv\Scripts\python.exe -m robot --include validation --outputdir results/validation tests/create_booking.robot
 ```
 
-Nenhuma categoria é excluída automaticamente: a execução completa e o workflow continuam incluindo todos os casos. Para futuros cenários, a tag `characterization` deve registrar expectativas observadas específicas e a tag `contract` deve ter uma origem de requisito ou um critério de projeto documentado.
+Nenhuma categoria é excluída automaticamente: a execução completa e o workflow continuam incluindo todos os casos. A tag `characterization` registra comportamentos observados específicos; `validation` identifica as expectativas de rejeição de entradas inválidas na criação. Esses critérios devem ter uma origem de requisito ou um critério de projeto documentado.
+
+Teste funcional verifica se uma funcionalidade atende ao comportamento esperado e pode ser executado pela interface gráfica ou diretamente pela API, conforme a definição do ISTQB CTFL, seção 2.2.2. Criar uma reserva e confirmar seus dados na consulta ou alterar um campo e verificar a preservação dos demais são exemplos de testes funcionais de API. As assertions de campos e tipos verificam a estrutura das respostas; o projeto não implementa contratos dirigidos por consumidores nem verifica expectativas de uma UI.
+
+Nesta revisão, a antiga tag `contract` foi substituída conforme o objetivo dos cenários:
+
+| Casos | Tags de classificação | Objetivo |
+| --- | --- | --- |
+| CT21–CT33 | `functional`, `negative`, `validation` | Rejeição de entradas inválidas conforme critérios documentados do projeto |
+| CT12–CT15 | `functional`, `specification` | Comportamento dos filtros de data descrito na API Docs |
+| CT57–CT60 | `functional` | Atualização parcial, persistência e preservação dos campos omitidos |
+| CT37–CT44 | `characterization` | Erros internos HTTP 500 observados e ausência de reserva criada |
+
+As tags são cumulativas: `negative`, `boundary`, `required` e `known_bug` continuam indicando aspectos adicionais. Outros cenários de CRUD também verificam funcionalidades; a tabela descreve os casos reclassificados nesta revisão, não toda a cobertura funcional.
 
 ### Preparação e limpeza
 
@@ -175,7 +188,7 @@ A API é pública e compartilhada; reinicializações ou alterações de terceir
 
 ### Divergências observadas na ampliação
 
-A última execução local, registrada em `results/output.xml`, executou **68 casos: 52 aprovados, 16 reprovados e nenhum ignorado**, sem falhas de teardown. As **oito caracterizações CT37–CT44 passaram**. Os oito contratos correspondentes agora falham diante de HTTP 500, além das oito divergências já identificadas. A separação evidencia erros internos que antes eram aceitos pela assertion genérica; a aprovação da caracterização não elimina a falha de contrato.
+A última execução local, registrada em `results/output.xml`, executou **68 casos: 52 aprovados, 16 reprovados e nenhum ignorado**, sem falhas de teardown. As **oito caracterizações CT37–CT44 passaram**. Os oito testes funcionais negativos correspondentes falham diante de HTTP 500, além das oito divergências já identificadas. A separação evidencia erros internos que antes eram aceitos pela assertion genérica; a aprovação da caracterização não elimina a falha de validação funcional.
 
 Os casos abaixo possuem a tag `known_bug` para facilitar sua investigação. Essa tag **não ignora os testes nem transforma falhas em sucesso**. A suíte completa e o workflow continuam executando esses cenários; enquanto as divergências persistirem, o resultado será reprovado. O badge representa o commit publicado no GitHub, não as alterações ainda locais.
 
@@ -300,7 +313,7 @@ As suítes continuam importando `booking.resource`. Ele recebe os resultados dos
 
 Por exemplo, o passo de criação chama `Enviar criação de reserva` com o payload, guarda a resposta e registra o ID para limpeza. O passo de validação chama `Validar resposta de criação` com essa resposta e os dados esperados. Na atualização parcial, os dados originais são copiados para montar o resultado esperado sem alterar a reserva original em memória.
 
-As validações de tipos são individuais: uma falha informa o campo e os tipos esperado e recebido, como `depositpaid deve ser bool; recebido str`. Os campos aninhados também são identificados por nome, como `bookingdates.checkout`. A comparação dos valores continua verificando o objeto completo. Os 68 cenários BDD, sua numeração e os critérios de contrato e caracterização foram preservados nesta reorganização.
+As validações de tipos são individuais: uma falha informa o campo e os tipos esperado e recebido, como `depositpaid deve ser bool; recebido str`. Os campos aninhados também são identificados por nome, como `bookingdates.checkout`. A comparação dos valores continua verificando o objeto completo. Os 68 cenários BDD, sua numeração e os critérios funcionais e de caracterização foram preservados nesta reorganização.
 
 ## Convenção de nomes das suítes
 
@@ -409,6 +422,7 @@ Para executar todos os testes:
 
 - [API RESTful Booker](https://restful-booker.herokuapp.com/)
 - [Documentação dos endpoints](https://restful-booker.herokuapp.com/apidoc/index.html)
+- [ISTQB — CTFL Syllabus v4.0.1, seção 2.2.2: tipos de teste e testes funcionais](https://istqb.org/wp-content/uploads/2024/11/ISTQB_CTFL_Syllabus_v4.0.1.pdf)
 - [Robot Framework — guia oficial](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html)
 - [RequestsLibrary — repositório oficial](https://github.com/MarketSquare/robotframework-requests)
 - [GitHub Actions — projetos Python](https://docs.github.com/en/actions/tutorials/build-and-test-code/python)
