@@ -11,7 +11,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 - **Repositório:** [robotframework-api-testing](https://github.com/deborahmancilha/robotframework-api-testing)
 
-> **Etapa atual:** automação das oito operações documentadas, com testes positivos, negativos, limites e Basic Auth. Os **testes funcionais de API** verificam as operações, a persistência e as expectativas de validação; os **testes de caracterização** registram comportamentos observados, incluindo erros internos HTTP 500. A etapa mais recente organiza os recursos em camadas de dados, chamadas HTTP e validações, coordenadas pelas keywords BDD. O projeto está publicado no GitHub e utiliza GitHub Actions para executar a suíte e disponibilizar os relatórios como artefatos.
+> **Etapa atual:** automação das oito operações documentadas, com testes positivos, negativos, limites e Basic Auth. Os **testes funcionais de API** verificam as operações, a persistência e as expectativas de validação; os **testes de caracterização** registram comportamentos observados, incluindo erros internos HTTP 500. Os recursos estão organizados em camadas de dados, chamadas HTTP e validações, coordenadas pelas keywords BDD. A configuração de CI agora separa Smoke e Suíte completa em jobs independentes, com relatórios próprios. O projeto está publicado no GitHub; a execução dessa nova configuração deve ser conferida após sua publicação.
 
 ## O que este projeto demonstra
 
@@ -259,11 +259,34 @@ Abra `results/report.html` no navegador. Relatórios e ambiente virtual são ign
 
 ## Integração contínua
 
-O workflow `.github/workflows/api-tests.yml` executa a suíte em pushes, pull requests e acionamento manual. Ele configura Python 3.12, instala as dependências e publica `robot-reports` com retenção de 14 dias, mesmo quando os testes falham. Uma falha da suíte reprova o job.
+O workflow `.github/workflows/api-tests.yml` é acionado em pushes, pull requests e execução manual. Ele possui dois jobs independentes, que podem executar em paralelo conforme a disponibilidade dos runners. Cada job configura Python 3.12, instala as dependências e publica seus relatórios com retenção de 14 dias, mesmo quando os testes falham.
 
-A integração contínua foi validada com sucesso no runner do GitHub, incluindo instalação das dependências, execução dos testes e publicação dos relatórios. Veja a [execução do commit que adicionou DeleteBooking](https://github.com/deborahmancilha/robotframework-api-testing/actions/runs/38282528654).
+| Job | Seleção | Pasta de resultados | Artefato |
+| --- | --- | --- | --- |
+| Smoke | Oito cenários com a tag `smoke`, um por operação | `results/smoke/` | `robot-smoke-reports` |
+| Suíte completa | Todos os 68 cenários, incluindo smoke, entradas inválidas, limites e caracterizações | `results/full/` | `robot-full-reports` |
 
-Para consultar os resultados, abra [Actions → API tests](https://github.com/deborahmancilha/robotframework-api-testing/actions/workflows/api-tests.yml), selecione uma execução e baixe o artefato `robot-reports`. Extraia o arquivo e abra `report.html` para o resumo ou `log.html` para os detalhes. O badge no início deste README mostra o resultado do workflow na branch `main` e leva ao histórico de execuções.
+Os smoke são CT01, CT02, CT07, CT16, CT18, CT45, CT53 e CT63: verificam os caminhos básicos de health check, autenticação, listagem, consulta, criação, PUT, PATCH e DELETE. Eles fornecem uma verificação menor das operações principais; smoke aprovado não garante que todos os comportamentos da API estejam corretos.
+
+A suíte completa executa mesmo se o smoke falhar. Cada job preserva o código de saída do Robot Framework: uma falha de teste reprova o job correspondente. Os casos com `known_bug` continuam ativos na suíte completa e suas falhas permanecem visíveis. Os oito smoke são executados novamente na suíte completa; cada execução prepara e limpa seus próprios dados.
+
+Para reproduzir as execuções localmente:
+
+```powershell
+# Smoke
+.\.venv\Scripts\python.exe -m robot --include smoke --outputdir results/smoke tests
+
+# Suíte completa
+.\.venv\Scripts\python.exe -m robot --outputdir results/full tests
+```
+
+Para consultar os resultados, abra [Actions → API tests](https://github.com/deborahmancilha/robotframework-api-testing/actions/workflows/api-tests.yml), selecione uma execução e confira o status de cada job. Baixe `robot-smoke-reports` ou `robot-full-reports`, extraia o arquivo e abra `report.html` para o resumo ou `log.html` para os detalhes. Cada artefato também inclui `output.xml`.
+
+Uma execução pode ter Smoke aprovado e Suíte completa reprovada: as operações básicas passaram, mas outros cenários encontraram divergências. O badge no início deste README mostra o resultado agregado do workflow na branch `main`; se qualquer job falhar, ele indica falha.
+
+A execução anterior, com um único job, validou instalação, execução e publicação dos relatórios no runner do GitHub. Veja a [execução do commit que adicionou DeleteBooking](https://github.com/deborahmancilha/robotframework-api-testing/actions/runs/38282528654). A configuração com dois jobs deve ser conferida no GitHub após sua publicação, incluindo os dois artefatos separados.
+
+Na validação local dessa configuração, os oito smoke passaram na API real, sem falhas de limpeza. O dry run da suíte completa validou a estrutura dos 68 cenários sem chamar a API; esse resultado não substitui uma execução real nem altera as divergências documentadas.
 
 ## Estrutura
 
