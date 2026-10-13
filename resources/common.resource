@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation    Configuração compartilhada da conexão HTTP.
 Library    RequestsLibrary
+Library    Collections
 
 *** Variables ***
 ${BASE_URL}    https://restful-booker.herokuapp.com
@@ -17,5 +18,9 @@ que possuo acesso à API Restful Booker
 
 a API deve retornar o status
     [Arguments]    ${expected_status}
-    Should Not Be Equal    ${RESPONSE}    ${None}    Envie uma requisição antes de validar a resposta.
-    Should Be Equal As Integers    ${RESPONSE.status_code}    ${expected_status}
+    Validar status da resposta    ${RESPONSE}    ${expected_status}
+
+Validar status da resposta
+    [Arguments]    ${response}    ${expected_status}
+    Should Not Be Equal    ${response}    ${None}    Envie uma requisição antes de validar a resposta.
+    Should Be Equal As Integers    ${response.status_code}    ${expected_status}

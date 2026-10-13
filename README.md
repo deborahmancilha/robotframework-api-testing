@@ -11,7 +11,7 @@ Projeto pessoal de qualidade de software para automatizar verificações da API 
 - **API Docs:** [https://restful-booker.herokuapp.com/apidoc/index.html](https://restful-booker.herokuapp.com/apidoc/index.html)
 - **Repositório:** [robotframework-api-testing](https://github.com/deborahmancilha/robotframework-api-testing)
 
-> **Etapa atual:** automação das oito operações documentadas, com testes positivos, negativos, limites e Basic Auth. A etapa mais recente separa explicitamente os **testes de contrato**, que verificam as expectativas de validação, dos **testes de caracterização**, que registram comportamentos observados, incluindo erros internos HTTP 500. O projeto está publicado no GitHub e utiliza GitHub Actions para executar a suíte e disponibilizar os relatórios como artefatos.
+> **Etapa atual:** automação das oito operações documentadas, com testes positivos, negativos, limites e Basic Auth. Os **testes de contrato** verificam expectativas de validação; os **testes de caracterização** registram comportamentos observados, incluindo erros internos HTTP 500. A etapa mais recente organiza os recursos em camadas de dados, chamadas HTTP e validações, coordenadas pelas keywords BDD. O projeto está publicado no GitHub e utiliza GitHub Actions para executar a suíte e disponibilizar os relatórios como artefatos.
 
 ## O que este projeto demonstra
 
@@ -140,7 +140,7 @@ A documentação e a implementação de referência estão em [API Docs](https:/
 | `characterization` | A API mantém o comportamento observado? | HTTP 500 exato e nenhuma reserva criada |
 | `contract` | A API atende à expectativa de validação do projeto? | HTTP 400 ou 422 e nenhuma reserva criada; HTTP 500 reprova |
 
-A expectativa de 400/422 é uma decisão explícita deste projeto, não uma garantia da API Docs. Não se fixa arbitrariamente um único código não documentado. O mesmo dado de entrada pode aparecer em ambas as categorias porque as verificações têm objetivos diferentes. Aprovar uma caracterização confirma o comportamento atual, inclusive inadequado; não comprova que o serviço trata o erro corretamente. Se o servidor passar a responder 400/422, a caracterização falhará sinalizando uma mudança que deve ser investigada, enquanto o contrato poderá passar. As requisições e a limpeza permanecem nas keywords reutilizáveis de `booking.resource`.
+A expectativa de 400/422 é uma decisão explícita deste projeto, não uma garantia da API Docs. Não se fixa arbitrariamente um único código não documentado. O mesmo dado de entrada pode aparecer em ambas as categorias porque as verificações têm objetivos diferentes. Aprovar uma caracterização confirma o comportamento atual, inclusive inadequado; não comprova que o serviço trata o erro corretamente. Se o servidor passar a responder 400/422, a caracterização falhará sinalizando uma mudança que deve ser investigada, enquanto o contrato poderá passar. `booking.resource` coordena os casos e sua limpeza, utilizando as chamadas de `booking_api.resource` e as assertions de `booking_validations.resource`.
 
 | Entrada | CT de contrato | CT de caracterização |
 | --- | --- | --- |
@@ -265,6 +265,9 @@ Projeto_outubro/
 ├── resources/
 │   ├── auth.resource
 │   ├── booking.resource
+│   ├── booking_api.resource
+│   ├── booking_data.resource
+│   ├── booking_validations.resource
 │   ├── common.resource
 │   └── health.resource
 ├── tests/
@@ -282,7 +285,22 @@ Projeto_outubro/
 └── requirements.txt
 ```
 
-`common.resource` centraliza a conexão HTTP, a preparação da resposta e a validação de status. `health.resource` reúne a requisição de health check; `auth.resource` reúne a preparação das credenciais, a requisição de autenticação e a validação do token. A pasta `.venv/` também existe localmente. Ela e `results/` ficam no `.gitignore` e não são versionadas; os resultados são gerados durante a execução.
+`common.resource` centraliza as bibliotecas RequestsLibrary e Collections, a conexão HTTP, a preparação da resposta e a validação de status. `health.resource` reúne a requisição de health check; `auth.resource` reúne a preparação das credenciais, a requisição de autenticação e a validação do token. A pasta `.venv/` também existe localmente. Ela e `results/` ficam no `.gitignore` e não são versionadas; os resultados são gerados durante a execução.
+
+### Camadas dos recursos de reservas
+
+| Recurso | Responsabilidade |
+| --- | --- |
+| `booking.resource` | Keywords BDD, estado de cada teste, preparação e limpeza das reservas |
+| `booking_data.resource` | Montagem e cópia de payloads, filtros, datas e resultados esperados |
+| `booking_api.resource` | GET, POST, PUT, PATCH e DELETE; headers, cookies, Basic Auth e sessões das operações protegidas |
+| `booking_validations.resource` | Assertions de status de rejeição, JSON, campos, tipos, valores e listas de IDs |
+
+As suítes continuam importando `booking.resource`. Ele recebe os resultados dos auxiliares e guarda somente o estado necessário no escopo do caso. Os auxiliares recebem argumentos explícitos e retornam os dados ou respostas, sem alterar variáveis de teste. Eles importam `common.resource` e não importam a camada BDD de volta, evitando dependências circulares.
+
+Por exemplo, o passo de criação chama `Enviar criação de reserva` com o payload, guarda a resposta e registra o ID para limpeza. O passo de validação chama `Validar resposta de criação` com essa resposta e os dados esperados. Na atualização parcial, os dados originais são copiados para montar o resultado esperado sem alterar a reserva original em memória.
+
+As validações de tipos são individuais: uma falha informa o campo e os tipos esperado e recebido, como `depositpaid deve ser bool; recebido str`. Os campos aninhados também são identificados por nome, como `bookingdates.checkout`. A comparação dos valores continua verificando o objeto completo. Os 68 cenários BDD, sua numeração e os critérios de contrato e caracterização foram preservados nesta reorganização.
 
 ## Convenção de nomes das suítes
 
@@ -301,7 +319,7 @@ Os arquivos de teste seguem o nome das operações documentadas na API Docs, con
 
 As oito operações possuem suítes implementadas. Os recursos agrupam keywords por funcionalidade, com configuração compartilhada em `common.resource`; a cobertura de cenários pode ser ampliada dentro de cada suíte.
 
-A separação segue a ideia de encapsular ações e detalhes técnicos usada no Page Object Model (POM). Para esta API, a camada de recursos representa operações de serviço: `tests/get_booking_ids.robot` descreve os cenários BDD, `booking.resource` implementa requisições, validações e dados de teste, e `common.resource` centraliza conexão e status. Não existem páginas ou seletores de interface nesta automação.
+A separação segue a ideia de encapsular ações e detalhes técnicos usada no Page Object Model (POM). Para esta API, os recursos representam operações de serviço: as suítes em `tests/` descrevem os cenários BDD, `booking.resource` coordena suas ações e os três auxiliares concentram dados, requisições e validações. `common.resource` fornece conexão, bibliotecas e status compartilhados.
 
 Para executar somente a operação GetBookingIds:
 

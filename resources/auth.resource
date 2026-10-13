@@ -1,7 +1,6 @@
 *** Settings ***
 Documentation    Criação de token de autenticação na API Restful Booker.
 Resource         common.resource
-Library          Collections
 
 *** Variables ***
 ${AUTH_USERNAME}    admin
@@ -16,8 +15,13 @@ que possuo credenciais válidas para a API Restful Booker
 
 eu enviar uma requisição para o endpoint de criação de token
     Should Not Be Equal    ${AUTH_PAYLOAD}    ${None}    Prepare as credenciais antes de enviar a requisição.
-    ${response}=    POST On Session    booker    /auth    json=${AUTH_PAYLOAD}    expected_status=any
+    ${response}=    Enviar requisição de token    ${AUTH_PAYLOAD}
     VAR    ${RESPONSE}    ${response}    scope=TEST
+
+Enviar requisição de token
+    [Arguments]    ${credentials}
+    ${response}=    POST On Session    booker    /auth    json=${credentials}    expected_status=any
+    RETURN    ${response}
 
 as credenciais possuem um usuário incorreto
     Set To Dictionary    ${AUTH_PAYLOAD}    username=usuario_incorreto
